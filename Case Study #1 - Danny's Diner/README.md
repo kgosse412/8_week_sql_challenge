@@ -4,7 +4,7 @@ All information related to this case study can be found at [Case Study #1 - Dann
 
 ## Questions and Answers
 ### 1. What is the total amount each customer spent at the restaurant?
-Overview:
+**Overview:**
 
 Two tables will be needed to solve this - sales and menu. Sales will have the information of what each customer bought and menu will have the price of each bought item.
 
@@ -13,7 +13,7 @@ I solved this by:
 2. Using SUM to add up the prices of the bought items
 3. Grouping the above by customer_id
 
-SQL Statement:
+**SQL Statement:**
 	
 	SELECT
 	s.customer_id AS "Customer"
@@ -26,7 +26,7 @@ SQL Statement:
 
 	ORDER BY s.customer_id
 
-Table Output:
+**Table Output:**
 
 | Customer | Total Spent |
 | -------- | ----------- |
@@ -34,12 +34,12 @@ Table Output:
 | B        | 74          |
 | C        | 36          |
 
-Answer:
+**Answer:**
 
 Customer A spent $76, customer B spent $74, and customer C spent $36.
 
 ### 2. How many days has each customer visited the restaurant?
-Overview:
+**Overview:**
 
 Only one table will be needed to solve this, sales, becasue it has both the customer and the order date.
 
@@ -47,7 +47,7 @@ I solved this by:
 1. Using a COUNT DISTINCT on the order_date column (NOTE: You cannot just use COUNT as there are multiple sales on the same day)
 2. Grouping the above by customer_id
 
-SQL Statement:
+**SQL Statement:**
 
 	SELECT
 	s.customer_id AS "Customer"
@@ -59,7 +59,7 @@ SQL Statement:
 
 	ORDER BY s.customer_id
 
-Table Output:
+**Table Output:**
 
 | Customer | Num of Visits |
 | -------- | ------------- |
@@ -67,7 +67,7 @@ Table Output:
 | B        | 6             |
 | C        | 2             |
 
-Answer:
+**Answer:**
 
 Customer A has visited 4 times, customer B has visited 6 times, and customer C has visited 2 times.
 
