@@ -4,6 +4,8 @@ All information related to this case study can be found at [Case Study #1 - Dann
 
 ## Questions and Answers
 ### 1. What is the total amount each customer spent at the restaurant?
+______________________________________________________________________
+
 **Overview:**
 
 Two tables will be needed to solve this - sales and menu. Sales will have the information of what each customer bought and menu will have the price of each bought item.
@@ -15,16 +17,18 @@ I solved this by:
 
 **SQL Statement:**
 	
-	SELECT
-	s.customer_id AS "Customer"
-	,SUM(m.price) AS "Total Spent"
+```sql	
+SELECT
+s.customer_id AS "Customer"
+,SUM(m.price) AS "Total Spent"
 
-	FROM dannys_diner.sales AS s
-	LEFT JOIN dannys_diner.menu AS m ON m.product_id = s.product_id
+FROM dannys_diner.sales AS s
+LEFT JOIN dannys_diner.menu AS m ON m.product_id = s.product_id
 
-	GROUP BY s.customer_id
+GROUP BY s.customer_id
 
-	ORDER BY s.customer_id
+ORDER BY s.customer_id
+```
 
 **Table Output:**
 
@@ -39,9 +43,11 @@ I solved this by:
 Customer A spent $76, customer B spent $74, and customer C spent $36.
 
 ### 2. How many days has each customer visited the restaurant?
+______________________________________________________________
+
 **Overview:**
 
-Only one table will be needed to solve this, sales, becasue it has both the customer and the order date.
+Only one table will be needed to solve this - sales - because it has both the customer and the order date.
 
 I solved this by:
 1. Using a COUNT DISTINCT on the order_date column (NOTE: You cannot just use COUNT as there are multiple sales on the same day)
@@ -49,15 +55,17 @@ I solved this by:
 
 **SQL Statement:**
 
-	SELECT
-	s.customer_id AS "Customer"
-	,COUNT(DISTINCT s.order_date) AS "Num of Visists"
+```sql
+SELECT
+s.customer_id AS "Customer"
+,COUNT(DISTINCT s.order_date) AS "Num of Visits"
 
-	FROM dannys_diner.sales AS s
+FROM dannys_diner.sales AS s
 
-	GROUP BY s.customer_id
+GROUP BY s.customer_id
 
-	ORDER BY s.customer_id
+ORDER BY s.customer_id
+```
 
 **Table Output:**
 
