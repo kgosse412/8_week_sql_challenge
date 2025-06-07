@@ -11,7 +11,7 @@ Two tables will be needed to solve this - sales and menu. Sales will have the in
 I solved this by:
 1. Using a join to connect the two tables
 2. Using SUM to add up the prices of the bought items
-3. Grouping the above by the customer
+3. Grouping the above by customer_id
 
 SQL Statement:
 	
@@ -39,6 +39,38 @@ Answer:
 Customer A spent $76, customer B spent $74, and customer C spent $36.
 
 ### 2. How many days has each customer visited the restaurant?
+Overview:
+
+Only one table will be needed to solve this, sales, becasue it has both the customer and the order date.
+
+I solved this by:
+1. Using a COUNT DISTINCT on the order_date column (NOTE: You cannot just use COUNT as there are multiple sales on the same day)
+2. Grouping the above by customer_id
+
+SQL Statement:
+
+	SELECT
+	s.customer_id AS "Customer"
+	,COUNT(DISTINCT s.order_date) AS "Num of Visists"
+
+	FROM dannys_diner.sales AS s
+
+	GROUP BY s.customer_id
+
+	ORDER BY s.customer_id
+
+Table Output:
+
+| Customer | Num of Visits |
+| -------- | ------------- |
+| A        | 4             |
+| B        | 6             |
+| C        | 2             |
+
+Answer:
+
+Customer A has visited 4 times, customer B has visited 6 times, and customer C has visited 2 times.
+
 ### 3. What was the first item from the menu purchased by each customer?
 ### 4. What is the most purchased item on the menu and how many times was it purchased by all customers?
 ### 5. Which item was the most popular for each customer?
