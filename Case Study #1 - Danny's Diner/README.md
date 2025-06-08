@@ -8,12 +8,17 @@ ______________________________________________________________________
 
 **Overview:**
 
-Two tables will be needed to solve this - sales and menu. Sales will have the information of what each customer bought and menu will have the price of each bought item.
+Tables used:
+
+| Table | Why |
+| ----- | --- |
+| sales | Contains the information of what each customer bought |
+| menu  | Contains the price of each bought item |
 
 I solved this by:
-1. Using a join to connect the two tables
-2. Using SUM to add up the prices of the bought items
-3. Grouping the above by customer_id
+1. Using a join to connect the two tables (I chose left join but inner join would work as well).
+2. Using SUM to add up the prices of the bought items.
+3. Grouping the above by customer_id.
 
 **SQL Statement:**
 	
@@ -47,11 +52,15 @@ ______________________________________________________________
 
 **Overview:**
 
-Only one table will be needed to solve this - sales - because it has both the customer and the order date.
+Tables used:
+
+| Table | Why |
+| ----- | --- |
+| sales | Contains both the customer and the order date data |
 
 I solved this by:
-1. Using a COUNT DISTINCT on the order_date column (NOTE: You cannot just use COUNT as there are multiple sales on the same day)
-2. Grouping the above by customer_id
+1. Using a COUNT DISTINCT on the order_date column (NOTE: You cannot just use COUNT as there are multiple sales on the same day).
+2. Grouping the above by customer_id.
 
 **SQL Statement:**
 
@@ -83,7 +92,12 @@ Customer A has visited 4 times, customer B has visited 6 times, and customer C h
 ________________________________________________________________________
 **Overview**
 
-Two tables will be needed to solve this problem - sales and menu. Sales has the customer_id, order_date, and product_id, while menu has the product_name.
+Tables used:
+
+| Table | Why |
+| ----- | --- |
+| sales | Contains the customer_id, order_date, and product_id needed for ranking. |
+| menu  | Contains the product_name. |
 
 For this problem, I manually calcuated the expected output so I knew exactly what would and wouldn't work to get the right data. For this case, the expected output is:
 - A: sushi & curry (both were bought on the same day)
@@ -93,9 +107,9 @@ For this problem, I manually calcuated the expected output so I knew exactly wha
 From there, I knew I needed to use either RANK or DENSE_RANK as the ROW_NUMBER function would skip either sushi or curry for A due to labeling one of them as a rank of 2. I chose RANK since I only needed the top 1 values anyway.
 
 So, I solved this by:
-1. Using the window function RANK with PARTITION BY on the customer_id
+1. Using the window function RANK with PARTITION BY on the customer_id.
 2. Taking the above query and using it as a subquery.
-3. Only showing the data where "Rank" is 1
+3. Only showing the data where "Rank" is 1.
 
 **SQL Statement**
 
@@ -137,13 +151,16 @@ ________________________________________________________________________________
 **Overview**
 
 Tables used:
-- sales -> has each product ordered by each customer
-- menu -> has the name of each product
+
+| Table | Why |
+| ----- | --- |
+| sales | Contains each product ordered by each customer |
+| menu  | Contains the name of each product |
 
 I solved this by:
-1. Using COUNT to count the number of product_id's ordered
-2. Grouping the count by the Product
-3. Limiting to 1 so only the top product will show
+1. Using COUNT to count the number of product_id's ordered.
+2. Grouping the count by the Product.
+3. Limiting to 1 so only the top product will show.
 
 **SQL Statement**
 
@@ -170,8 +187,178 @@ LIMIT 1
 The most purchased item on the menu is ramen with a total of 8 being purchased across all customers.
 
 ### 5. Which item was the most popular for each customer?
+______________________________________________________________
+
+**Overview**
+
+Tables used:
+| Table | Why |
+| ----- | --- |
+| sales | Contains the customer and what they purchased. |
+| menu  | Contains the product name. |
+
+I solved this by:
+1.
+2.
+3.
+
+**SQL Statement**
+```sql
+SELECT
+s.customer_id AS "Customer"
+,COUNT(s.product_id) AS "Product Count"
+,m.product_name AS "Product"
+
+FROM dannys_diner.sales AS s
+LEFT JOIN dannys_diner.menu AS m ON m.product_id = s.product_id
+```
+**Table Output**
+
+| Name 1 | Name 2 |
+| ------ | ------ |
+| data a | data b |
+
+**Answer**
+
+
+
+
 ### 6. Which item was purchased first by the customer after they became a member?
+_________________________________________________________________________________
+
+**Overview**
+
+Tables used:
+| Table | Why |
+| ----- | --- |
+
+I solved this by:
+1.
+2.
+3.
+
+**SQL Statement**
+```sql
+
+
+```
+**Table Output**
+
+| Name 1 | Name 2 |
+| ------ | ------ |
+| data a | data b |
+
+**Answer**
+
+
 ### 7. Which item was purchased just before the customer became a member?
+_________________________________________________________________________
+
+**Overview**
+
+Tables used:
+| Table | Why |
+| ----- | --- |
+
+I solved this by:
+1.
+2.
+3.
+
+**SQL Statement**
+```sql
+
+
+```
+**Table Output**
+
+| Name 1 | Name 2 |
+| ------ | ------ |
+| data a | data b |
+
+**Answer**
+
+
 ### 8. What is the total items and amount spent for each member before they became a member?
+____________________________________________________________________________________________
+
+**Overview**
+
+Tables used:
+| Table | Why |
+| ----- | --- |
+
+I solved this by:
+1.
+2.
+3.
+
+**SQL Statement**
+```sql
+
+
+```
+**Table Output**
+
+| Name 1 | Name 2 |
+| ------ | ------ |
+| data a | data b |
+
+**Answer**
+
+
 ### 9. If each $1 spent equates to 10 points and sushi has a 2x points multiplier - how many points would each customer have?
+_____________________________________________________________________________________________________________________________
+
+**Overview**
+
+Tables used:
+| Table | Why |
+| ----- | --- |
+
+I solved this by:
+1.
+2.
+3.
+
+**SQL Statement**
+```sql
+
+
+```
+**Table Output**
+
+| Name 1 | Name 2 |
+| ------ | ------ |
+| data a | data b |
+
+**Answer**
+
+
 ### 10. In the first week after a customer joins the program (including their join date) they earn 2x points on all items, not just sushi - how many points do customer A and B have at the end of January?
+__________________________________________________________________________________________________________________________
+
+**Overview**
+
+Tables used:
+| Table | Why |
+| ----- | --- |
+
+I solved this by:
+1.
+2.
+3.
+
+**SQL Statement**
+```sql
+
+
+```
+**Table Output**
+
+| Name 1 | Name 2 |
+| ------ | ------ |
+| data a | data b |
+
+**Answer**
+
