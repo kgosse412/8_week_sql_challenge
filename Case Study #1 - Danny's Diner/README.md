@@ -80,6 +80,55 @@ ORDER BY s.customer_id
 Customer A has visited 4 times, customer B has visited 6 times, and customer C has visited 2 times.
 
 ### 3. What was the first item from the menu purchased by each customer?
+
+**Overview**
+
+Two tables will be needed to solve this problem - sales and menu. Sales has the customer_id, order_date, and product_id, while menu has the product_name.
+
+For this problem, I manually calcuated the expected output so I knew exactly what would and wouldn't work to get the right data. For this case, the expected output is:
+- A: sushi & curry (both were bought on the same day)
+- B: curry
+- C: ramen & ramen (both were bought on the same day)
+
+From there, I knew I needed to use either RANK or DENSE_RANK as the ROW_NUMBER function would skip either sushi or curry for A due to labeling one of them as a rank of 2. I chose RANK since I only needed the top 1 values anyway.
+
+So, I solved this by:
+1. Using the window function RANK with PARTITION BY on the customer_id
+2. Taking the above query and using it as a subquery.
+3. Only showing the data where "Rank" is 1
+
+**SQL Statement**
+```sql
+SELECT
+"Customer"
+,"Product"
+
+FROM (SELECT
+	s.customer_id AS "Customer"
+	,s.order_date AS "Order Date"
+	,m.product_name AS "Product"
+	,RANK() OVER(PARTITION BY s.customer_id ORDER BY s.order_date ASC) AS "Rank"
+
+	FROM dannys_diner.sales AS s
+	LEFT JOIN dannys_diner.menu AS m ON m.product_id = s.product_id
+) AS ranked_product
+
+WHERE
+"Rank" = 1
+```
+
+**Table Output*
+| Customer | Product |
+| -------- | ------- |
+| A        | curry   |
+| A        | sushi   |
+| B        | curry   |
+| C        | ramen   |
+| C        | ramen   |
+
+**Answer**
+Customer A first bough curry and sushi, customer B first bough curry, and customer C first bought ramen.
+
 ### 4. What is the most purchased item on the menu and how many times was it purchased by all customers?
 ### 5. Which item was the most popular for each customer?
 ### 6. Which item was purchased first by the customer after they became a member?
