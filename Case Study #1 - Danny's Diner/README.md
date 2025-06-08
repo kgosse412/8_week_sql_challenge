@@ -130,7 +130,7 @@ WHERE
 
 **Answer**
 
-Customer A first bough curry and sushi, customer B first bough curry, and customer C first bought ramen.
+Customer A first bought curry and sushi, customer B first bought curry, and customer C first bought ramen.
 
 ### 4. What is the most purchased item on the menu and how many times was it purchased by all customers?
 ### 5. Which item was the most popular for each customer?
