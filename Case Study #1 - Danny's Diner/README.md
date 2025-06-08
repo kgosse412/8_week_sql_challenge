@@ -133,6 +133,42 @@ WHERE
 Customer A first bought curry and sushi, customer B first bought curry, and customer C first bought ramen.
 
 ### 4. What is the most purchased item on the menu and how many times was it purchased by all customers?
+________________________________________________________________________________________________________
+**Overview**
+
+Tables used:
+- sales -> has each product ordered by each customer
+- menu -> has the name of each product
+
+I solved this by:
+1. Using COUNT to count the number of product_id's ordered
+2. Grouping the count by the Product
+3. Limiting to 1 so only the top product will show
+
+**SQL Statement**
+
+```sql
+SELECT
+COUNT(s.product_id) AS "Product Count"
+,m.product_name AS "Product"
+
+FROM dannys_diner.sales AS s
+LEFT JOIN dannys_diner.menu AS m ON m.product_id = s.product_id
+
+GROUP BY "Product"
+LIMIT 1
+```
+
+**Table Output**
+
+| Product Count | Product |
+| ------------- | ------- |
+| 8             | ramen   |
+
+**Answer**
+
+The most purchased item on the menu is ramen with a total of 8 being purchased across all customers.
+
 ### 5. Which item was the most popular for each customer?
 ### 6. Which item was purchased first by the customer after they became a member?
 ### 7. Which item was purchased just before the customer became a member?
