@@ -80,7 +80,7 @@ ORDER BY s.customer_id
 Customer A has visited 4 times, customer B has visited 6 times, and customer C has visited 2 times.
 
 ### 3. What was the first item from the menu purchased by each customer?
-
+________________________________________________________________________
 **Overview**
 
 Two tables will be needed to solve this problem - sales and menu. Sales has the customer_id, order_date, and product_id, while menu has the product_name.
@@ -98,6 +98,7 @@ So, I solved this by:
 3. Only showing the data where "Rank" is 1
 
 **SQL Statement**
+
 ```sql
 SELECT
 "Customer"
@@ -118,6 +119,7 @@ WHERE
 ```
 
 **Table Output*
+
 | Customer | Product |
 | -------- | ------- |
 | A        | curry   |
@@ -127,6 +129,7 @@ WHERE
 | C        | ramen   |
 
 **Answer**
+
 Customer A first bough curry and sushi, customer B first bough curry, and customer C first bought ramen.
 
 ### 4. What is the most purchased item on the menu and how many times was it purchased by all customers?
