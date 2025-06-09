@@ -449,27 +449,60 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| sales | Contains the products ordered by each customer |
+| menu  | Contains the product name and prices of each product |
 
 Expected Results:
+- Customer A will have 860pts
+- Customer B will have 940pts
+- Customer C will have 360pts
 
 I solved this by:
-1.
-2.
-3.
+1. Joining the two tables together with a LEFT JOIN
+2. Using CASE to create a Points column based on the product_name
+3. Turning the above query into a Common Table Expression (CTE) 
+4. Querying the CTE and using SUM to add all the points up
+5. Grouping the above by Customer
 
 **SQL Statement**
+
 ```sql
+WITH pts_tbl AS (SELECT
+    s.customer_id AS "Customer"
+	,s.product_id AS "Product ID"
+	,m.price AS "Price"
+	,CASE
+		WHEN m.product_name = 'sushi' THEN 20 * m.price
+    	ELSE 10 * m.price
+	END AS "Points"
 
+	FROM dannys_diner.sales AS s
+	LEFT JOIN dannys_diner.menu AS m ON s.product_id = m.product_id
+)
 
+SELECT
+"Customer"
+,SUM("Points") AS "Points Total"
+
+FROM pts_tbl
+
+GROUP BY "Customer"
+
+ORDER BY "Customer" ASC
 ```
 **Table Output**
 
-| Name 1 | Name 2 |
-| ------ | ------ |
-| data a | data b |
+| Customer | Points Total |
+| -------- | ------------ |
+| A        | 860          |
+| B        | 940          |
+| C        | 360          |
 
 **Answer**
 
+- Customer A has 860 points
+- Customer B has 940 points
+- Customer C has 360 points
 
 ### 10. In the first week after a customer joins the program (including their join date) they earn 2x points on all items, not just sushi - how many points do customer A and B have at the end of January?
 __________________________________________________________________________________________________________________________
