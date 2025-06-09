@@ -3,6 +3,8 @@
 
 My solutions to the 8 Week SQL Challenge provided by [Data with Danny](https://www.datawithdanny.com/) at the website [8 Weeks SQL Challenege](https://8weeksqlchallenge.com).
 
+NOTE: This is currently a work in progress.
+
 ## Solutions
 
 The solutions to each challenge can be found in their respective folders:
