@@ -2,6 +2,8 @@
 ## Overview
 All information related to this case study can be found at [Case Study #1 - Danny's Diner](https://8weeksqlchallenge.com/case-study-1/).
 
+All solutions used PostgreSQL v17.
+
 ## Questions and Answers
 ### 1. What is the total amount each customer spent at the restaurant?
 ______________________________________________________________________
@@ -513,24 +515,57 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| sales | Contains the products ordered by each customer |
+| menu  | Contains the name of each product |
+| members | Contains when each member joined as a member |
 
 Expected Results:
+- Customer A should have 1370 pts
+- Customer B should have 940 pts
+- Customer C isn't a member and won't show up in this list
 
 I solved this by:
-1.
-2.
-3.
+1. Joining all 3 tables together. I used an INNER JOIN for the 'sales' and 'members' table so only values in both tables would show (meaning it would exclude C since they are not a customer). Then a LEFT JOIN to join the menu table.
+2. Using a CASE statement, I added a condition where any product named 'sushi' or any date within 7 after joining provided a 20 point multiplyer
+3. Taking the above query and turning it in a Common Table Expression (CTE) for easy querying.
+4. Using SUM to add all the points together from the CTE.
+5. Using a WHERE statement to indicate I only want the points from January.
 
 **SQL Statement**
 ```sql
+WITH pts_tbl AS (SELECT
+	s.customer_id AS "Customer"
+	,s.order_date AS "Order Date"
+	,CASE
+		WHEN m.product_name = 'sushi' OR (s.order_date >= mb.join_date AND s.order_date <= mb.join_date + INTERVAL '7 days') THEN 20 * m.price
+   		ELSE 10 * m.price
+	END AS "Points"
 
+	FROM dannys_diner.sales AS s
+	INNER JOIN dannys_diner.members as mb ON s.customer_id = mb.customer_id
+	LEFT JOIN dannys_diner.menu AS m ON s.product_id = m.product_id
 
+	ORDER BY "Customer", "Order Date"
+)
+
+SELECT
+"Customer"
+,SUM("Points") AS "Points Total"
+
+FROM pts_tbl
+
+WHERE
+EXTRACT(month from "Order Date") < 2
+
+GROUP BY "Customer"
 ```
 **Table Output**
 
-| Name 1 | Name 2 |
-| ------ | ------ |
-| data a | data b |
+| Customer | Points Total |
+| -------- | ------------ |
+| A        | 1370         |
+| B        | 940          |
 
 **Answer**
-
+- Customer A has 1370 pts for January
+- Customer B has 940 pts for January
