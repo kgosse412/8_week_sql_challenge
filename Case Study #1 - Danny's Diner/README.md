@@ -331,6 +331,7 @@ _________________________________________________________________________
 **Overview**
 
 Tables Used:
+
 | Table | Why |
 | ----- | --- |
 | sales | Contains the products ordered by each customer |
@@ -394,29 +395,50 @@ ________________________________________________________________________________
 **Overview**
 
 Tables Used:
+
 | Table | Why |
 | ----- | --- |
+| sales | Contains the products ordered by each customer |
+| menu  | Contains the name of each product |
+| members | Contains when each member joined as a member |
 
 Expected Results:
+- Customer A bought 2 items at $25
+- Customer B bought 3 items at $40
+- Customer C isn't a member and won't show up in this list
 
 I solved this by:
-1.
-2.
-3.
+1. Joining all three tables together
+2. Using COUNT on product_id to count the number of products bought
+3. Using SUM on price to determine total amount spent
+4. Grouping the above by customer_id
 
 **SQL Statement**
 ```sql
+SELECT
+s.customer_id AS "Customer"
+,COUNT(s.product_id) AS "Product Count"
+,SUM(m.price) AS "Total Sales"
 
+FROM dannys_diner.sales AS s
+INNER JOIN dannys_diner.members AS mb ON s.customer_id = mb.customer_id AND s.order_date < mb.join_date
+LEFT JOIN dannys_diner.menu AS m ON m.product_id = s.product_id
 
+GROUP BY "Customer"
+
+ORDER BY "Customer" ASC
 ```
 **Table Output**
 
-| Name 1 | Name 2 |
-| ------ | ------ |
-| data a | data b |
+| Customer | Product Count | Total Sales |
+| -------- | ------------- | ----------- |
+| A        | 2             | 25          |
+| B        | 3             | 40          |
 
 **Answer**
 
+- Customer A bought 2 items at $25
+- Customer B bought 3 items at $40
 
 ### 9. If each $1 spent equates to 10 points and sushi has a 2x points multiplier - how many points would each customer have?
 _____________________________________________________________________________________________________________________________
@@ -424,6 +446,7 @@ ________________________________________________________________________________
 **Overview**
 
 Tables Used:
+
 | Table | Why |
 | ----- | --- |
 
@@ -454,6 +477,7 @@ ________________________________________________________________________________
 **Overview**
 
 Tables Used:
+
 | Table | Why |
 | ----- | --- |
 
