@@ -8,12 +8,17 @@ ______________________________________________________________________
 
 **Overview:**
 
-Tables used:
+Tables Used:
 
 | Table | Why |
 | ----- | --- |
 | sales | Contains the information of what each customer bought |
 | menu  | Contains the price of each bought item |
+
+Expected Results:
+- Customer A spent $76
+- Customer B spent $74
+- Customer C spent $36
 
 I solved this by:
 1. Using a join to connect the two tables (I chose left join but inner join would work as well).
@@ -54,11 +59,16 @@ ______________________________________________________________
 
 **Overview:**
 
-Tables used:
+Tables Used:
 
 | Table | Why |
 | ----- | --- |
 | sales | Contains both the customer and the order date data |
+
+Expected Results:
+- Customer A visited 4 times
+- Customer B visited 6 times
+- Customer C visited 2 times
 
 I solved this by:
 1. Using a COUNT DISTINCT on the order_date column (NOTE: You cannot just use COUNT as there are multiple sales on the same day).
@@ -88,7 +98,9 @@ ORDER BY s.customer_id
 
 **Answer:**
 
-Customer A has visited 4 times, customer B has visited 6 times, and customer C has visited 2 times.
+- Customer A has visited 4 times
+- Customer B has visited 6 times
+- Customer C has visited 2 times
 
 ### 3. What was the first item from the menu purchased by each customer?
 ________________________________________________________________________
@@ -101,12 +113,10 @@ Tables used:
 | sales | Contains the customer_id, order_date, and product_id needed for ranking. |
 | menu  | Contains the product_name. |
 
-For this problem, I manually calcuated the expected output so I knew exactly what would and wouldn't work to get the right data. For this case, the expected output is:
-- A: sushi & curry (both were bought on the same day)
-- B: curry
-- C: ramen & ramen (both were bought on the same day)
-
-From there, I knew I needed to use either RANK or DENSE_RANK as the ROW_NUMBER function would skip either sushi or curry for A due to labeling one of them as a rank of 2. I chose RANK since I only needed the top 1 values anyway.
+Expected Results:
+- Customer A first bought both sushi and curry
+- Customer B first bought curry
+- Customer C first bought 2 ramens
 
 So, I solved this by:
 1. Using the window function RANK with PARTITION BY on the customer_id while setting ORDER BY order_date.
@@ -154,12 +164,15 @@ WHERE
 ________________________________________________________________________________________________________
 **Overview**
 
-Tables used:
+Tables Used:
 
 | Table | Why |
 | ----- | --- |
 | sales | Contains each product ordered by each customer |
 | menu  | Contains the name of each product |
+
+Expected Results:
+- 8 ramens
 
 I solved this by:
 1. Using COUNT to count the number of product_id's ordered.
@@ -195,18 +208,16 @@ ______________________________________________________________
 
 **Overview**
 
-Tables used:
+Tables Used:
 | Table | Why |
 | ----- | --- |
 | sales | Contains the customer and what they purchased. |
 | menu  | Contains the product name. |
 
-For this problem, I manually calcuated the expected output so I knew exactly what would and wouldn't work to get the right data. For this case, the expected output is:
-- A: ramen
-- B: curry, ramen, and sushi (all three were bought an equal number of times)
-- C: ramen
-
-From there, I knew I needed to use either RANK or DENSE_RANK as the ROW_NUMBER function would skip over 2 of the 3 outputs for B. In this case, I chose RANK since I only needed the top 1 values anyway.
+Expected Results:
+- Customer A bought ramen the most
+- Customer B bought curry, ramen, and sushi the most (all three were bought an equal number of times)
+- Customer C bought ramen the most
 
 I solved this by:
 1. I used COUNT on product_id to figure out the number of products each customer ordered.
@@ -256,13 +267,18 @@ ________________________________________________________________________________
 
 **Overview**
 
-Tables used:
+Tables Used:
 
 | Table | Why |
 | ----- | --- |
 | sales | Contains the products ordered by each customer |
 | menu  | Contains the name of each product |
 | members | Contains when each member joined as a member |
+
+Expected Results:
+- Customer A ordered ramen
+- Customer B ordered sushi
+- Customer C isn't a member and won't show up in the list
 
 I solved this by:
 1. Joining the sales and members tables on two different criteria to weed out any customers or order dates we didn't want to look at.
@@ -314,16 +330,17 @@ _________________________________________________________________________
 
 **Overview**
 
-Tables used:
+Tables Used:
 | Table | Why |
 | ----- | --- |
 | sales | Contains the products ordered by each customer |
 | menu  | Contains the name of each product |
 | members | Contains when each member joined as a member |
 
-For this problem, I manually calcuated the expected output so I knew exactly what would and wouldn't work to get the right data. For this case, the expected output is:
-- A: sushi & curry
-- B: sushi
+Expected Results:
+- Customer A ordered sushi and curry (same day)
+- Customer B ordered sushi
+- Customer C isn't a member and won't show up in the list
 
 I solved this by:
 1. Joining the sales and members tables on two different criteria to weed out any customers or order dates we didn't want to look at.
@@ -376,9 +393,11 @@ ________________________________________________________________________________
 
 **Overview**
 
-Tables used:
+Tables Used:
 | Table | Why |
 | ----- | --- |
+
+Expected Results:
 
 I solved this by:
 1.
@@ -404,9 +423,11 @@ ________________________________________________________________________________
 
 **Overview**
 
-Tables used:
+Tables Used:
 | Table | Why |
 | ----- | --- |
+
+Expected Results:
 
 I solved this by:
 1.
@@ -432,9 +453,11 @@ ________________________________________________________________________________
 
 **Overview**
 
-Tables used:
+Tables Used:
 | Table | Why |
 | ----- | --- |
+
+Expected Results:
 
 I solved this by:
 1.
