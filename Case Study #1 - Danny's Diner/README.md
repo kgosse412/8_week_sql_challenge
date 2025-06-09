@@ -107,7 +107,7 @@ For this problem, I manually calcuated the expected output so I knew exactly wha
 From there, I knew I needed to use either RANK or DENSE_RANK as the ROW_NUMBER function would skip either sushi or curry for A due to labeling one of them as a rank of 2. I chose RANK since I only needed the top 1 values anyway.
 
 So, I solved this by:
-1. Using the window function RANK with PARTITION BY on the customer_id.
+1. Using the window function RANK with PARTITION BY on the customer_id while setting ORDER BY order_date.
 2. Taking the above query and using it as a subquery.
 3. Only showing the data where "Rank" is 1.
 
@@ -197,31 +197,53 @@ Tables used:
 | sales | Contains the customer and what they purchased. |
 | menu  | Contains the product name. |
 
+For this problem, I manually calcuated the expected output so I knew exactly what would and wouldn't work to get the right data. For this case, the expected output is:
+- A: ramen
+- B: curry, ramen, and sushi (all three were bought an equal number of times)
+- C: ramen
+
+From there, I knew I needed to use either RANK or DENSE_RANK as the ROW_NUMBER function would skip over 2 of the 3 outputs for B. In this case, I chose RANK since I only needed the top 1 values anyway.
+
 I solved this by:
-1.
-2.
-3.
+1. I used COUNT on product_id to figure out the number of products each customer ordered.
+2. I used the window function RANK to PARTITION BY customer_id and ORDER BY the above COUNT
+3. Took the above and used it as a subquery.
+4. Used the WHERE clause to show only what was ranked as 1.
 
 **SQL Statement**
 ```sql
 SELECT
-s.customer_id AS "Customer"
-,COUNT(s.product_id) AS "Product Count"
-,m.product_name AS "Product"
+"Customer"
+,"Product"
 
-FROM dannys_diner.sales AS s
-LEFT JOIN dannys_diner.menu AS m ON m.product_id = s.product_id
+FROM(SELECT
+	s.customer_id AS "Customer"
+	,m.product_name AS "Product"
+	,COUNT(s.product_id) AS "Product Count"
+	,RANK() OVER(PARTITION BY s.customer_id ORDER BY COUNT(s.product_id) DESC) AS "Rank"
+
+	FROM dannys_diner.sales AS s
+	LEFT JOIN dannys_diner.menu AS m ON m.product_id = s.product_id
+
+	GROUP BY "Customer", "Product"
+) AS ranked_product
+
+WHERE
+"Rank" = 1
 ```
 **Table Output**
 
 | Name 1 | Name 2 |
 | ------ | ------ |
-| data a | data b |
+| A      | ramen  |
+| B      | ramen  |
+| B      | curry  |
+| B      | sushi  |
+| C      | ramen  |
 
 **Answer**
 
-
-
+Customer A ordered ramen the most, customer B ordered all three (ramen, sushi, and curry) equally the most, and customer C ordered ramen the most.
 
 ### 6. Which item was purchased first by the customer after they became a member?
 _________________________________________________________________________________
