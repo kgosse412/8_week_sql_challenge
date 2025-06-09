@@ -569,3 +569,43 @@ GROUP BY "Customer"
 **Answer**
 - Customer A has 1370 pts for January
 - Customer B has 940 pts for January
+
+### Bonus Question 1 - Join All The Things
+__________________________________________
+
+**Overview**
+
+Tables Used:
+
+| Table | Why |
+| ----- | --- |
+| sales | Contains the products ordered by each customer |
+| menu  | Contains the name of each product |
+| members | Contains when each member joined as a member |
+ 
+Expected Output:
+![Bonus Table 1](bonus_question_1_tbl.png)
+
+I solved this by:
+1. Joining all 3 tables together. I used LEFT JOINs because I wanted to showcase every customer from the sales table.
+2. Using a CASE statement to indicate when a customer is a memember.
+3. Using ORDER BY to order the results by customer_id, order_date, and product_name.
+
+**SQL Statement**
+```sql
+SELECT
+s.customer_id
+,s.order_date
+,m.product_name
+,m.price
+,CASE
+	WHEN s.order_date >= mb.join_date THEN 'Y'
+    ELSE 'N'
+END AS "member"
+
+FROM dannys_diner.sales AS s
+LEFT JOIN dannys_diner.menu AS m ON s.product_id = m.product_id
+LEFT JOIN dannys_diner.members AS mb ON s.customer_id = mb.customer_id
+
+ORDER BY s.customer_id ASC, s.order_date ASC, m.product_name ASC
+```
