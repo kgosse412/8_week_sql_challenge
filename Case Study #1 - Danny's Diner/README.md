@@ -251,26 +251,55 @@ ________________________________________________________________________________
 **Overview**
 
 Tables used:
+
 | Table | Why |
 | ----- | --- |
+| sales | Contains the products ordered by each customer |
+| menu  | Contains the name of each product |
+| members | Contains when each member joined as a member |
 
 I solved this by:
-1.
-2.
-3.
+1. Joining the sales and members tables on two different criteria to weed out any customers or order dates we didn't want to look at.
+2. Using RANK with PARTITION BY customer_id ORDER BY order_date to get a ranking of each product ordered.
+3. Turning the above query into a Common Table Expression (CTE).
+4. Querying the CTE for where rank is 1 after joining the table to the menu table to get the product name.
+
+NOTE: Customer A became a member on the same day they purchased something. Since it's unclear if they purchased became a member first that day and then purchased something or if they purchased something and then became a memember, I decided to exclude that day from the query.
 
 **SQL Statement**
 ```sql
+WITH ranked_products AS (SELECT
+s.customer_id AS "Customer"
+,s.order_date AS "Order Date"
+,s.product_id AS "Product ID"
+,RANK() OVER(PARTITION BY s.customer_id ORDER BY s.order_date ASC) AS "Rank"
 
+FROM dannys_diner.sales AS s
+INNER JOIN dannys_diner.members AS mb ON s.customer_id = mb.customer_id AND s.order_date > mb.join_date)
 
+SELECT
+"Customer"
+,m.product_name AS "Product Name"
+
+FROM ranked_products AS rp
+LEFT JOIN dannys_diner.menu AS m ON rp."Product ID" = m.product_id
+
+WHERE
+"Rank" = 1
+
+ORDER BY "Customer" ASC
 ```
+
 **Table Output**
 
-| Name 1 | Name 2 |
-| ------ | ------ |
-| data a | data b |
+| Customer | Product Name |
+| -------- | ------------ |
+| A        | ramen        |
+| B        | sushi        |
 
 **Answer**
+
+Customer A ordered ramen after becoming a member, and customer B ordered sushi after becoming a member.
 
 
 ### 7. Which item was purchased just before the customer became a member?
