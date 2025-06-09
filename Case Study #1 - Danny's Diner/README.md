@@ -45,7 +45,9 @@ ORDER BY s.customer_id
 
 **Answer:**
 
-Customer A spent $76, customer B spent $74, and customer C spent $36.
+- Customer A spent $76
+- Customer B spent $74
+- Customer C spent $36
 
 ### 2. How many days has each customer visited the restaurant?
 ______________________________________________________________
@@ -144,7 +146,9 @@ WHERE
 
 **Answer**
 
-Customer A first bought curry and sushi, customer B first bought curry, and customer C first bought ramen.
+- Customer A first bought curry and sushi
+- Customer B first bought curry
+- Customer C first bought ramen
 
 ### 4. What is the most purchased item on the menu and how many times was it purchased by all customers?
 ________________________________________________________________________________________________________
@@ -243,7 +247,9 @@ WHERE
 
 **Answer**
 
-Customer A ordered ramen the most, customer B ordered all three (ramen, sushi, and curry) equally the most, and customer C ordered ramen the most.
+- Customer A ordered ramen the most
+- Customer B ordered all three (ramen, sushi, and curry) equally the most
+- Customer C ordered ramen the most
 
 ### 6. Which item was purchased first by the customer after they became a member?
 _________________________________________________________________________________
@@ -269,13 +275,13 @@ NOTE: Customer A became a member on the same day they purchased something. Since
 **SQL Statement**
 ```sql
 WITH ranked_products AS (SELECT
-s.customer_id AS "Customer"
-,s.order_date AS "Order Date"
-,s.product_id AS "Product ID"
-,RANK() OVER(PARTITION BY s.customer_id ORDER BY s.order_date ASC) AS "Rank"
+	s.customer_id AS "Customer"
+	,s.order_date AS "Order Date"
+	,s.product_id AS "Product ID"
+	,RANK() OVER(PARTITION BY s.customer_id ORDER BY s.order_date ASC) AS "Rank"
 
-FROM dannys_diner.sales AS s
-INNER JOIN dannys_diner.members AS mb ON s.customer_id = mb.customer_id AND s.order_date > mb.join_date)
+	FROM dannys_diner.sales AS s
+	INNER JOIN dannys_diner.members AS mb ON s.customer_id = mb.customer_id AND s.order_date > mb.join_date)
 
 SELECT
 "Customer"
@@ -299,7 +305,8 @@ ORDER BY "Customer" ASC
 
 **Answer**
 
-Customer A ordered ramen after becoming a member, and customer B ordered sushi after becoming a member.
+- Customer A ordered ramen after becoming a member
+- Customer B ordered sushi after becoming a member
 
 
 ### 7. Which item was purchased just before the customer became a member?
@@ -310,25 +317,59 @@ _________________________________________________________________________
 Tables used:
 | Table | Why |
 | ----- | --- |
+| sales | Contains the products ordered by each customer |
+| menu  | Contains the name of each product |
+| members | Contains when each member joined as a member |
+
+For this problem, I manually calcuated the expected output so I knew exactly what would and wouldn't work to get the right data. For this case, the expected output is:
+- A: sushi & curry
+- B: sushi
 
 I solved this by:
-1.
-2.
-3.
+1. Joining the sales and members tables on two different criteria to weed out any customers or order dates we didn't want to look at.
+2. Using RANK with PARTITION BY customer_id ORDER BY order_date DESC to get a ranking of each product ordered.
+3. Turning the above query into a Common Table Expression (CTE).
+4. Querying the CTE for where rank is 1 after joining the table to the menu table to get the product name.
+
+NOTE: Customer A became a member on the same day they purchased something. Since it's unclear if they purchased became a member first that day and then purchased something or if they purchased something and then became a memember, I decided to exclude that day from the query.
 
 **SQL Statement**
+
 ```sql
+WITH ranked_products AS (SELECT
+	s.customer_id AS "Customer"
+	,s.order_date AS "Order Date"
+	,s.product_id AS "Product ID"
+	,RANK() OVER(PARTITION BY s.customer_id ORDER BY s.order_date DESC) AS "Rank"
 
+	FROM dannys_diner.sales AS s
+	INNER JOIN dannys_diner.members AS mb ON s.customer_id = mb.customer_id AND s.order_date < mb.join_date)
 
+SELECT
+"Customer"
+,m.product_name AS "Product Name"
+
+FROM ranked_products AS rp
+LEFT JOIN dannys_diner.menu AS m ON rp."Product ID" = m.product_id
+
+WHERE
+"Rank" = 1
+
+ORDER BY "Customer" ASC
 ```
+
 **Table Output**
 
-| Name 1 | Name 2 |
-| ------ | ------ |
-| data a | data b |
+| Customer | Product Name |
+| -------- | ------------ |
+| A        | sushi        |
+| A        | curry        |
+| B        | sushi        |
 
 **Answer**
 
+- Customer A ordered both sushi and curry before becoming a member
+- Customer B ordered sushi before becoming a member
 
 ### 8. What is the total items and amount spent for each member before they became a member?
 ____________________________________________________________________________________________
