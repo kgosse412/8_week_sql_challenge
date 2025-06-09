@@ -10,3 +10,4 @@ NOTE: This is currently a work in progress.
 The solutions to each challenge can be found in their respective folders:
 
 1. [Case Study #1 - Danny's Diner](https://github.com/kgosse412/8_week_sql_challenge/tree/main/Case%20Study%20%231%20-%20Danny's%20Diner)
+2. [Case Study #2 - Pizza Runner](https://github.com/kgosse412/8_week_sql_challenge/tree/main/Case%20Study%20%232%20-%20Pizza%20Runner)
