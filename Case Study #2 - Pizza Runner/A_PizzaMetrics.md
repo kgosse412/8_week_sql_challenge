@@ -661,27 +661,75 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| customer_orders_clean | Contains number of pizzas ordered and when the order occurred |
+
 
 Expected Results:
-- (expected result) 
+- Hour 11 had 1 pizza.
+- Hour 13 had 3 pizzas.
+- Hour 18 had 3 pizzas.
+- Hour 19 had 1 pizza.
+- Hour 21 had 3 pizzas.
+- Hour 23 had 3 pizzas.
 
 I solved this by:
 
-1. 
+1. Using my cleaned up Common Table Expression (CTE) table called `customer_orders_clean`.
+2. Using `EXTRACT` to get the hour from the `order_time`.
+3. Using `COUNT` to count how many orders there are.
+4. Using `GROUP BY` to group the count by `"Hour"`.
+5. Sorting the output by `"Hour"` by using `ORDER BY`.
 
 **SQL Statement:**
 	
 ```sql	
+WITH customer_orders_clean AS (SELECT
+	co.order_id
+	,co.customer_id
+	,co.pizza_id
+	,CASE
+		WHEN co.exclusions = 'null' OR co.exclusions = '' THEN NULL
+   	 	ELSE co.exclusions
+	END AS exclusions
+	,CASE
+		WHEN co.extras = 'null' OR co.extras = '' THEN NULL
+    	ELSE co.extras
+	END AS extras
+	,co.order_time
 
+	FROM pizza_runner.customer_orders AS co
+)
+
+SELECT
+EXTRACT(HOUR from order_time) AS "Hour"
+,COUNT(order_id) AS "Pizza Count"
+
+FROM customer_orders_clean
+
+GROUP BY "Hour"
+
+ORDER BY "Hour" ASC
 ```
 
 **Table Output:**
 
-| Name 1 | Name 2 |
-| ------ | ------ |
+| Hour | Pizza Count |
+| ---- | ----------- |
+| 11   | 1           |
+| 13   | 3           |
+| 18   | 3           |
+| 19   | 1           |
+| 21   | 3           |
+| 23   | 3           |
 
 **Answer:**
-- (answer)
+- Hour 11 had 1 pizza.
+- Hour 13 had 3 pizzas.
+- Hour 18 had 3 pizzas.
+- Hour 19 had 1 pizza.
+- Hour 21 had 3 pizzas.
+- Hour 23 had 3 pizzas.
+- All other others had 0 pizzas.
 
 ### 10. What was the volume of orders for each day of the week?
 _______________________________________________________________
