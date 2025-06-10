@@ -23,27 +23,50 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| runners | Contains information about the runner and when they signed up |
 
 Expected Results:
-- (expected result) 
+- 2 runners signed up week 1.
+- 1 runner signed up week 2.
+- 1 runner signed up week 3. 
 
 I solved this by:
 
-1. 
+1. Using `EXTRACT` with `WEEK` to get the week number.
+2. Using a `CASE` statement to set the weeks to show WW53 as WW01. This is because we want the week to start on 2021-01-01.
+3. Using `COUNT` to count the number of `runner_id`s.
+4. Using `GROUP BY` to group the above by each `"Week"`.
+5. Sorting the output by `"Week"` by using `ORDER BY`.
 
 **SQL Statement:**
 	
 ```sql	
+SELECT
+CASE 
+	WHEN EXTRACT(WEEK FROM r.registration_date) = 53 THEN 1
+    ELSE EXTRACT(WEEK FROM r.registration_date) + 1
+END AS "Week"
+,COUNT(r.runner_id) AS "Runner Signup"
 
+FROM pizza_runner.runners AS r
+
+GROUP BY "Week"
+
+ORDER BY "Week"
 ```
 
 **Table Output:**
 
-| Name 1 | Name 2 |
-| ------ | ------ |
+| Week | Runner Signup |
+| ---- | ------------- |
+| 1    | 2             |
+| 2    | 1             |
+| 3    | 1             |
 
 **Answer:**
-- (answer)
+- 2 runners signed up week 1.
+- 1 runner signed up week 2.
+- 1 runner signed up week 3.
 
 ### 2. What was the average time in minutes it took for each runner to arrive at the Pizza Runner HQ to pickup the order?
 _________________________________________________________________________________________________________________________
