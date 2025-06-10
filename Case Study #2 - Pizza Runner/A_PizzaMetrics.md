@@ -11,13 +11,13 @@
 
 [6. What was the maximum number of pizzas delivered in a single order?](#6-What-was-the-maximum-number-of-pizzas-delivered-in-a-single-order)
 
-[7. For each customer, how many delivered pizzas had at least 1 change and how many had no changes?](7-For-each-customer-how-many-delivered-pizzas-had-at-least-1-change-and-how-many-had-no-changes)
+[7. For each customer, how many delivered pizzas had at least 1 change and how many had no changes?](#7-For-each-customer-how-many-delivered-pizzas-had-at-least-1-change-and-how-many-had-no-changes)
 
-[8. How many pizzas were delivered that had both exclusions and extras?](8-How-many-pizzas-were-delivered-that-had-both-exclusions-and-extras)
+[8. How many pizzas were delivered that had both exclusions and extras?](#8-How-many-pizzas-were-delivered-that-had-both-exclusions-and-extras)
 
-[9. What was the total volume of pizzas ordered for each hour of the day?](9-What-was-the-total-volume-of-pizzas-ordered-for-each-hour-of-the-day)
+[9. What was the total volume of pizzas ordered for each hour of the day?](#9-What-was-the-total-volume-of-pizzas-ordered-for-each-hour-of-the-day)
 
-[10. What was the volume of orders for each day of the week?](10-What-was-the-volume-of-orders-for-each-day-of-the-week)
+[10. What was the volume of orders for each day of the week?](#10-What-was-the-volume-of-orders-for-each-day-of-the-week)
 
 # Question and Answers
 ### 1. How many pizzas were ordered?
