@@ -1,5 +1,5 @@
 # Table of Contents
-[1. How many pizzas were ordered?](#1.-How-many-pizzas-were-ordered?)
+[1. How many pizzas were ordered?](#1-How-many-pizzas-were-ordered)
 
 [2. How many unique customer orders were made?](https://github.com/kgosse412/8_week_sql_challenge/blob/main/Case%20Study%20%232%20-%20Pizza%20Runner/A_PizzaMetrics.md#2-how-many-unique-customer-orders-were-made)
 
