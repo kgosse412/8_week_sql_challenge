@@ -13,7 +13,7 @@ Expected Results:
 
 I solved this by:
 
-1. Using my cleaned up Commont Table Expression (CTE) table called `customer_orders_clean`.
+1. Using my cleaned up Common Table Expression (CTE) table called `customer_orders_clean`.
 2. Using `COUNT` on every row to get a count of each pizza ordered.
 
 **SQL Statement:**
@@ -66,7 +66,7 @@ Expected Results:
 
 I solved this by:
 
-1. Using my cleaned up Commont Table Expression (CTE) table called `customer_orders_clean`.
+1. Using my cleaned up Common Table Expression (CTE) table called `customer_orders_clean`.
 2. Using `COUNT DISTINCT` on `order_id` to get the unique count of each order.
 
 **SQL Statement:**
@@ -112,27 +112,75 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| runner_orders | Contains information about each runner and the order they ran |
 
 Expected Results:
-- (expected result) 
+- Runner 1 ran 4 orders.
+- Runner 2 ran 3 orders.
+- Runner 3 ran 1 order.
 
 I solved this by:
 
-1. 
+1. Using my cleaned up Common Table Expression (CTE) table called `runner_orders_clean`.
+2. Using `COUNT` to count up how many orders were ran.
+3. Using `GROUP BY` on the above to group the orders by the `runner_id`.
+4. Using `WHERE` to only look at the orders where `cancellation` is `NULL`.
 
 **SQL Statement:**
 	
 ```sql	
+WITH runner_orders_clean AS (SELECT
+  ro.order_id
+  ,ro.runner_id
+  ,CASE
+      WHEN ro.pickup_time = 'null' OR ro.pickup_time = '' THEN NULL
+      ELSE ro.pickup_time::TIMESTAMP
+  END AS pickup_time
+  ,CASE
+      WHEN ro.distance = 'null' OR ro.distance = '' THEN NULL
+      WHEN ro.distance LIKE '%km' THEN TRIM('km' FROM ro.distance)::DECIMAL
+      ELSE ro.distance::DECIMAL
+  END AS distance
+  ,CASE
+      WHEN ro.duration = 'null' OR ro.duration = '' THEN NULL
+      WHEN ro.duration LIKE '%minutes' THEN TRIM('minutes' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%minute' THEN TRIM('minute' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%mins' THEN TRIM ('mins' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%min' THEN TRIM ('min' FROM ro.duration)::INT
+      ELSE ro.duration::INT
+  END AS duration
+  ,CASE
+      WHEN ro.cancellation = 'null' OR ro.cancellation = '' THEN NULL
+      ELSE ro.cancellation
+  END AS cancellation
 
+  FROM pizza_runner.runner_orders AS ro
+)
+
+SELECT
+runner_id AS "Runner"
+,COUNT(order_id) AS "Order Count"
+
+FROM runner_orders_clean
+
+WHERE
+cancellation IS NULL
+
+GROUP BY "Runner"
 ```
 
 **Table Output:**
 
-| Name 1 | Name 2 |
-| ------ | ------ |
+| Runner | Order Count |
+| ------ | ----------- |
+| 1      | 4           |
+| 2      | 3           |
+| 3      | 1           |
 
 **Answer:**
-- (answer)
+- Runner 1 ran 4 orders.
+- Runner 2 ran 3 orders.
+- Runner 3 ran 1 order.
 
 ### 4. How many of each type of pizza was delivered?
 ____________________________________________________
