@@ -388,27 +388,57 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| customer_orders_clean | Contains the number of pizzas ordered |
 
 Expected Results:
-- (expected result) 
+- The max number of pizzas delivered in a single order was 3.
 
 I solved this by:
 
-1. 
+1. Using my cleaned up Common Table Expression (CTE) table called `customer_orders_clean`.
+2. Creating a subquery that uses `COUNT` and `GROUP BY` to determine the count of each pizza grouped by the customer who ordered the pizza.
+3. Using `MAX` on the above subquery to determine the maximum count.
 
 **SQL Statement:**
 	
 ```sql	
+WITH customer_orders_clean AS (SELECT
+	co.order_id
+	,co.customer_id
+	,co.pizza_id
+	,CASE
+		WHEN co.exclusions = 'null' OR co.exclusions = '' THEN NULL
+   	 	ELSE co.exclusions
+	END AS exclusions
+	,CASE
+		WHEN co.extras = 'null' OR co.extras = '' THEN NULL
+    	ELSE co.extras
+	END AS extras
+	,co.order_time
 
+	FROM pizza_runner.customer_orders AS co
+)
+
+SELECT
+MAX("Pizza Count") AS "Max Pizzas Delivered"
+
+FROM (SELECT
+	co.order_id AS "Order ID"
+	,COUNT(co.pizza_id) AS "Pizza Count"
+
+	FROM customer_orders_clean AS co
+
+	GROUP BY "Order ID") AS pizza_cnt
 ```
 
 **Table Output:**
 
-| Name 1 | Name 2 |
-| ------ | ------ |
+| Max Pizzas Delivered |
+| -------------------- |
+| 3                    |
 
 **Answer:**
-- (answer)
+- The max number of pizzas delivered in a single order is 3.
 
 ### 7. For each customer, how many delivered pizzas had at least 1 change and how many had no changes?
 ______________________________________________________________________________________________________
