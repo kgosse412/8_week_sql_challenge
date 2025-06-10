@@ -6,27 +6,50 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| customer_orders | Contains all the pizzas ordered by each customer |
 
 Expected Results:
-- (expected result) 
+- There were 14 pizzas ordered.
 
 I solved this by:
 
-1. 
+1. Using my cleaned up Commont Table Expression (CTE) table called `customer_orders_clean`.
+2. Using `COUNT` on every row to get a count of each pizza ordered.
 
 **SQL Statement:**
 	
 ```sql	
+WITH customer_orders_clean AS (SELECT
+	co.order_id
+	,co.customer_id
+	,co.pizza_id
+	,CASE
+		WHEN co.exclusions = 'null' OR co.exclusions = '' THEN NULL
+   	 	ELSE co.exclusions
+	END AS exclusions
+	,CASE
+		WHEN co.extras = 'null' OR co.extras = '' THEN NULL
+    	ELSE co.extras
+	END AS extras
+	,co.order_time
 
+	FROM pizza_runner.customer_orders AS co
+)
+
+SELECT
+COUNT(*) AS "Pizza Count"
+
+FROM customer_orders_clean
 ```
 
 **Table Output:**
 
-| Name 1 | Name 2 |
-| ------ | ------ |
+| Pizza Count |
+| ----------- |
+| 14          |
 
 **Answer:**
-- (answer)
+- 14 pizzas have been ordered.
 
 ### 2. How many unique customer orders were made?
 _________________________________________________
@@ -36,27 +59,50 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| customer_orders | Contains each unique order by a customer |
 
 Expected Results:
-- (expected result) 
+- There are 10 unique orders.
 
 I solved this by:
 
-1. 
+1. Using my cleaned up Commont Table Expression (CTE) table called `customer_orders_clean`.
+2. Using `COUNT DISTINCT` on `order_id` to get the unique count of each order.
 
 **SQL Statement:**
 	
 ```sql	
+WITH customer_orders_clean AS (SELECT
+	co.order_id
+	,co.customer_id
+	,co.pizza_id
+	,CASE
+		WHEN co.exclusions = 'null' OR co.exclusions = '' THEN NULL
+   	 	ELSE co.exclusions
+	END AS exclusions
+	,CASE
+		WHEN co.extras = 'null' OR co.extras = '' THEN NULL
+    	ELSE co.extras
+	END AS extras
+	,co.order_time
 
+	FROM pizza_runner.customer_orders AS co
+)
+
+SELECT
+COUNT(DISTINCT order_id) AS "Order Count"
+
+FROM customer_orders_clean
 ```
 
 **Table Output:**
 
-| Name 1 | Name 2 |
-| ------ | ------ |
+| Order Count |
+| ----------- |
+| 10          |
 
 **Answer:**
-- (answer)
+- There are 10 unique orders.
 
 ### 3. How many successful orders were delivered by each runner?
 ________________________________________________________________
