@@ -449,7 +449,7 @@ Tables Used:
 | Table | Why |
 | ----- | --- |
 | customer_orders_clean | Contains the number of pizzas ordered and the changes to each pizza |
-| runner_orders_clean | Contains information on what pizzas where delivered and what pizza orders were cancelled |
+| runner_orders_clean | Contains information on what pizzas were delivered and what pizza orders were cancelled |
 
 Expected Results:
 - Customer 101 had 0 pizzas with one change and 2 pizzas without a change delivered.
