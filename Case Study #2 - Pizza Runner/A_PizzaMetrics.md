@@ -190,27 +190,93 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| customer_order | Contains the pizza that was ordered |
+| runner_order   | Contains the orders that were run   |
+| pizza_names    | Contains the name of each pizza     |
 
 Expected Results:
-- (expected result) 
+- Meat Lovers was successfully delivered 9 times.
+- Vegetarian was successfully delievered 3 times.
 
 I solved this by:
 
-1. 
+1. Using my cleaned up Common Table Expression (CTE) table called `customer_orders_clean`.
+2. Using my cleaned up Common Table Expression (CTE) table called `runner_orders_clean`.
+3. Using `COUNT` to count up the number of `pizza_id` delivered.
+4. Using `GROUP BY` to group the above by the `pizza_name`.
+5. Using `WHERE` to exclude any cancelled deliveries since we only want to see what was actually delivered.
 
 **SQL Statement:**
 	
 ```sql	
+WITH customer_orders_clean AS (SELECT
+	co.order_id
+	,co.customer_id
+	,co.pizza_id
+	,CASE
+		WHEN co.exclusions = 'null' OR co.exclusions = '' THEN NULL
+   	 	ELSE co.exclusions
+	END AS exclusions
+	,CASE
+		WHEN co.extras = 'null' OR co.extras = '' THEN NULL
+    	ELSE co.extras
+	END AS extras
+	,co.order_time
 
+	FROM pizza_runner.customer_orders AS co
+),
+runner_orders_clean AS (SELECT
+  ro.order_id
+  ,ro.runner_id
+  ,CASE
+      WHEN ro.pickup_time = 'null' OR ro.pickup_time = '' THEN NULL
+      ELSE ro.pickup_time::TIMESTAMP
+  END AS pickup_time
+  ,CASE
+      WHEN ro.distance = 'null' OR ro.distance = '' THEN NULL
+      WHEN ro.distance LIKE '%km' THEN TRIM('km' FROM ro.distance)::DECIMAL
+      ELSE ro.distance::DECIMAL
+  END AS distance
+  ,CASE
+      WHEN ro.duration = 'null' OR ro.duration = '' THEN NULL
+      WHEN ro.duration LIKE '%minutes' THEN TRIM('minutes' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%minute' THEN TRIM('minute' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%mins' THEN TRIM ('mins' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%min' THEN TRIM ('min' FROM ro.duration)::INT
+      ELSE ro.duration::INT
+  END AS duration
+  ,CASE
+      WHEN ro.cancellation = 'null' OR ro.cancellation = '' THEN NULL
+      ELSE ro.cancellation
+  END AS cancellation
+
+  FROM pizza_runner.runner_orders AS ro
+)
+
+SELECT
+pn.pizza_name AS "Pizza Name"
+,COUNT(co.pizza_id) AS "Delivered Pizzas"
+
+FROM customer_orders_clean AS co
+LEFT JOIN runner_orders_clean AS ro ON co.order_id = ro.order_id
+LEFT JOIN pizza_names as pn ON co.pizza_id = pn.pizza_id
+
+WHERE
+ro.cancellation IS NULL
+
+GROUP BY "Pizza Name"
 ```
 
 **Table Output:**
 
-| Name 1 | Name 2 |
-| ------ | ------ |
+| Pizza Name | Delivered Pizzas |
+| ---------- | ---------------- |
+| Meatlovers | 9                |
+| Vegetarian | 3                |
 
 **Answer:**
-- (answer)
+- 9 Meatlovers were delivered.
+- 3 Vegetarians were delivered.
 
 ### 5. How many Vegetarian and Meatlovers were ordered by each customer?
 ________________________________________________________________________
