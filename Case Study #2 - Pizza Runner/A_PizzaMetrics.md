@@ -739,24 +739,65 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| customer_orders_clean | Contains number of pizzas ordered and when the order occurred |
 
 Expected Results:
-- (expected result) 
+- Sunday has 1 pizza.
+- Monday has 5 pizzas.
+- Friday has 5 pizzas.
+- Saturday has 3 pizzas.
 
 I solved this by:
 
-1. 
+1. Using my cleaned up Common Table Expression (CTE) table called `customer_orders_clean`.
+2. Adding 2 days to the `order_time` by using `+ INTERVAL '2 day'`. Without this, the days returned are wrong by 2 days.
+3. Converting the above to a day of the week by using `TO_CHAR`.
+4. Using `COUNT` to count all the orders.
+5. Using `GROUP BY` to group the count by `"Day"`.
+6. Sorting the output by `"Day"` by using `ORDER BY`.
 
 **SQL Statement:**
 	
 ```sql	
+WITH customer_orders_clean AS (SELECT
+	co.order_id
+	,co.customer_id
+	,co.pizza_id
+	,CASE
+		WHEN co.exclusions = 'null' OR co.exclusions = '' THEN NULL
+   	 	ELSE co.exclusions
+	END AS exclusions
+	,CASE
+		WHEN co.extras = 'null' OR co.extras = '' THEN NULL
+    	ELSE co.extras
+	END AS extras
+	,co.order_time
 
+	FROM pizza_runner.customer_orders AS co
+)
+
+SELECT
+TO_CHAR(order_time + INTERVAL '2 day', 'DAY') AS "Day"
+,COUNT(order_id) AS "Pizza Count"
+
+FROM customer_orders_clean
+
+GROUP BY "Day"
+
+ORDER BY "Day"
 ```
 
 **Table Output:**
 
-| Name 1 | Name 2 |
-| ------ | ------ |
+| Day       | Pizza Count |
+| --------- | ----------- |
+| FRIDAY    | 5           |
+| MONDAY    | 5           |
+| SATURDAY  | 3           |
+| SUNDAY    | 1           |
 
 **Answer:**
-- (answer)
+- Friday has 5 pizzas.
+- Saturday has 3 pizzas.
+- Sunday has 1 pizza.
+- Monday has 5 pizzas.
