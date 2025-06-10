@@ -1,4 +1,12 @@
 # Case Study #2 - Pizza Runner
+## Table of Contents
+- [Overview](#Overview)
+- [Data Cleanup](#Data-Cleanup)
+	- [customer_orders Cleanup](#customer_orders-cleanup)
+	- [runner_orders Cleanup](#runner_orders-cleanup)
+- [Questions and Answers](#Questions-and-Answers)
+
+
 ## Overview
 All information related to this case study can be found at [Case Study #2 - Pizza Runner](https://8weeksqlchallenge.com/case-study-2/).
 
