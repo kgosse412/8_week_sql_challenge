@@ -39,9 +39,10 @@ Expected Results:
 - Customer C spent $36
 
 I solved this by:
-1. Using a join to connect the two tables (I chose left join but inner join would work as well).
-2. Using SUM to add up the prices of the bought items.
-3. Grouping the above by customer_id.
+1. Using a `LEFT JOIN` to connect the two tables (I chose `LEFT JOIN` but `INNER JOIN` would work as well).
+2. Using `SUM` to add up the prices of the bought items.
+3. Using `GROUP BY` on the above by to group by `customer_id`.
+4. Using `ORDER BY` to sort by `customer_id`.
 
 **SQL Statement:**
 	
@@ -89,8 +90,9 @@ Expected Results:
 - Customer C visited 2 times
 
 I solved this by:
-1. Using a COUNT DISTINCT on the order_date column (NOTE: You cannot just use COUNT as there are multiple sales on the same day).
-2. Grouping the above by customer_id.
+1. Using a `COUNT DISTINCT` on the `order_date` column (NOTE: You cannot just use `COUNT` as there are multiple sales on the same day).
+2. Using `GROUP BY` on `customer_id`.
+3. Using `ORDER BY` to sort by `customer_id`.
 
 **SQL Statement:**
 
@@ -137,9 +139,9 @@ Expected Results:
 - Customer C first bought 2 ramens
 
 So, I solved this by:
-1. Using the window function RANK with PARTITION BY on the customer_id while setting ORDER BY order_date.
+1. Using the window function `RANK` with `PARTITION BY` on the `customer_id` while setting `ORDER BY` `order_date`.
 2. Taking the above query and using it as a subquery.
-3. Only showing the data where "Rank" is 1.
+3. Only showing the data where `"Rank"` is 1.
 
 **SQL Statement**
 
@@ -193,9 +195,9 @@ Expected Results:
 - 8 ramens
 
 I solved this by:
-1. Using COUNT to count the number of product_id's ordered.
-2. Grouping the count by the Product.
-3. Limiting to 1 so only the top product will show.
+1. Using `COUNT` to count the number of `product_id`'s ordered.
+2. Using `GROUP BY` to group the count by the `"Product"`.
+3. Using `LIMIT` set to 1 so only the top product will show.
 
 **SQL Statement**
 
@@ -238,10 +240,10 @@ Expected Results:
 - Customer C bought ramen the most
 
 I solved this by:
-1. I used COUNT on product_id to figure out the number of products each customer ordered.
-2. I used the window function RANK to PARTITION BY customer_id and ORDER BY the above COUNT
+1. I used `COUNT` on `product_id` to figure out the number of products each customer ordered.
+2. I used the window function `RANK` to `PARTITION BY` `customer_id` and `ORDER BY` the above `COUNT`.
 3. Took the above and used it as a subquery.
-4. Used the WHERE clause to show only what was ranked as 1.
+4. Used the `WHERE` clause to show only what was ranked as 1.
 
 **SQL Statement**
 ```sql
@@ -299,12 +301,13 @@ Expected Results:
 - Customer C isn't a member and won't show up in the list
 
 I solved this by:
-1. Joining the sales and members tables on two different criteria to weed out any customers or order dates we didn't want to look at.
-2. Using RANK with PARTITION BY customer_id ORDER BY order_date to get a ranking of each product ordered.
-3. Turning the above query into a Common Table Expression (CTE).
-4. Querying the CTE for where rank is 1 after joining the table to the menu table to get the product name.
+1. Using a `INNER JOIN` to join the sales and members tables on two different criteria to weed out any customers or order dates we didn't want to look at.
+2. Using `RANK` with `PARTITION BY customer_id ORDER BY order_date` to get a ranking of each product ordered.
+3. Turning the above query into a Common Table Expression (CTE) called `ranked_products`.
+4. Using `LEFT JOIN` to join `ranked_products` to the `menu` table to get `product_name`.
+4. Querying the above for `"Rank"` is 1.
 
-NOTE: Customer A became a member on the same day they purchased something. Since it's unclear if they purchased became a member first that day and then purchased something or if they purchased something and then became a memember, I decided to exclude that day from the query.
+>NOTE: Customer A became a member on the same day they purchased something. Since it's unclear if they purchased became a member first that day and then purchased something or if they purchased something and then became a memember, I decided to exclude that day from the query.
 
 **SQL Statement**
 ```sql
@@ -362,10 +365,12 @@ Expected Results:
 - Customer C isn't a member and won't show up in the list
 
 I solved this by:
-1. Joining the sales and members tables on two different criteria to weed out any customers or order dates we didn't want to look at.
-2. Using RANK with PARTITION BY customer_id ORDER BY order_date DESC to get a ranking of each product ordered.
-3. Turning the above query into a Common Table Expression (CTE).
-4. Querying the CTE for where rank is 1 after joining the table to the menu table to get the product name.
+1. Using `INNER JOIN` to join the `sales` and `members` tables on two different criteria to weed out any customers or order dates we didn't want to look at.
+2. Using `RANK` with `PARTITION BY customer_id ORDER BY order_date DESC` to get a ranking of each product ordered.
+3. Turning the above query into a Common Table Expression (CTE) called `ranked_products`.
+4. Using `LEFT JOIN` to join the `menu` table to get the `product_name`.
+4. Using `WHERE` to determine when `"RANK" = 1`.
+5. Using `ORDER BY` to sort by the `"Customer"`.
 
 NOTE: Customer A became a member on the same day they purchased something. Since it's unclear if they purchased became a member first that day and then purchased something or if they purchased something and then became a memember, I decided to exclude that day from the query.
 
@@ -426,10 +431,12 @@ Expected Results:
 - Customer C isn't a member and won't show up in this list
 
 I solved this by:
-1. Joining all three tables together
-2. Using COUNT on product_id to count the number of products bought
-3. Using SUM on price to determine total amount spent
-4. Grouping the above by customer_id
+1. Using `INNER JOIN` to join `sales` and `memebers` together.
+2. Using `LEFT JOIN` to join `sales` and `menu` together.
+3. Using `COUNT` on `product_id` to count the number of products bought.
+4. Using `SUM` on `price` to determine total amount spent.
+5. Using `GROUP BY` to group the above by `customer_id`.
+6. Sorting by `"Customer"` by using `ORDER BY`.
 
 **SQL Statement**
 ```sql
@@ -476,11 +483,12 @@ Expected Results:
 - Customer C will have 360pts
 
 I solved this by:
-1. Joining the two tables together with a LEFT JOIN
-2. Using CASE to create a Points column based on the product_name
-3. Turning the above query into a Common Table Expression (CTE) 
-4. Querying the CTE and using SUM to add all the points up
-5. Grouping the above by Customer
+1. Joining the two tables, `sales` and `menu`, together with a `LEFT JOIN`.
+2. Using `CASE` to create a `"Points"` column based on the `product_name`.
+3. Turning the above query into a Common Table Expression (CTE) called `pts_tbl`.
+4. Querying the CTE and using `SUM` to add all the points up.
+5. Grouping the above by `"Customer"` using `GROUP BY`.
+6. Sorting the output by using `ORDER BY` on `"Customer"`.
 
 **SQL Statement**
 
@@ -541,11 +549,11 @@ Expected Results:
 - Customer C isn't a member and won't show up in this list
 
 I solved this by:
-1. Joining all 3 tables together. I used an INNER JOIN for the 'sales' and 'members' table so only values in both tables would show (meaning it would exclude C since they are not a customer). Then a LEFT JOIN to join the menu table.
-2. Using a CASE statement, I added a condition where any product named 'sushi' or any date within 7 after joining provided a 20 point multiplyer
-3. Taking the above query and turning it in a Common Table Expression (CTE) for easy querying.
-4. Using SUM to add all the points together from the CTE.
-5. Using a WHERE statement to indicate I only want the points from January.
+1. Joining all 3 tables together. I used an `INNER JOIN` for the `sales` and `members` table so only values in both tables would show (meaning it would exclude C since they are not a customer). Then a `LEFT JOIN` to join the menu table.
+2. Using a `CASE` statement, I added a condition where any product named sushi or any date within 7 after joining provided a 20 point multiplyer
+3. Taking the above query and turning it in a Common Table Expression (CTE) called `pts_tbl`.
+4. Using `SUM` to add all the points together from the CTE.
+5. Using a `WHERE` statement to indicate I only want the points from January.
 
 **SQL Statement**
 ```sql
@@ -604,9 +612,9 @@ Expected Output:
 ![Bonus Table 1](Images/bonus_question_1_tbl.png)
 
 I solved this by:
-1. Joining all 3 tables together. I used LEFT JOINs because I wanted to showcase every customer from the sales table.
-2. Using a CASE statement to indicate when a customer is a memember.
-3. Using ORDER BY to order the results by customer_id, order_date, and product_name.
+1. Joining all 3 tables together. I used `LEFT JOIN`s because I wanted to showcase every customer from the sales table.
+2. Using a `CASE` statement to indicate when a customer is a memember.
+3. Using `ORDER BY` to order the results by `customer_id`, `order_date`, and `product_name`.
 
 **SQL Statement**
 ```sql
@@ -645,11 +653,11 @@ Expected Output:
 ![Bonus Table 2](Images/bonus_question_2_tbl.png)
 
 I solved this by:
-1. Joining all 3 tables together. I used LEFT JOINs because I wanted to showcase every customer from the sales table.
-2. Using a CASE statement to indicate when a customer is a memember.
-3. Using ORDER BY to order the results by customer_id, order_date, and product_name.
-4. Turning the above into a Common Table Expression (CTE) so I can use the created member column.
-5. Creating a new query that references all the variables in the CTE as well as using another CASE to indicate when something should be ranked v set to null.
+1. Joining all 3 tables together. I used `LEFT JOIN`s because I wanted to showcase every customer from the sales table.
+2. Using a `CASE` statement to indicate when a customer is a memember.
+3. Using `ORDER BY` to order the results by `customer_id`, `order_date`, and `product_name`.
+4. Turning the above into a Common Table Expression (CTE) called `member_info_tbl` so I can use the created `member` column.
+5. Creating a new query that references all the variables in the CTE as well as using another `CASE` to indicate when something should be ranked or set to null.
 
 **SQL Statement**
 ```sql
