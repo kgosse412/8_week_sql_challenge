@@ -448,27 +448,115 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| customer_orders_clean | Contains the number of pizzas ordered and the changes to each pizza |
 
 Expected Results:
-- (expected result) 
+- Customer 101 had 0 pizzas with one change and 2 pizzas without a change delivered.
+- Customer 102 had 0 pizzas with one change and 3 pizzas without a change delivered.
+- Customer 103 had 3 pizzas with one change and 0 pizzas without a change delivered.
+- Customer 104 had 2 pizzas with one change and 1 pizza without a change delivered.
+- Customer 105 had 1 pizza with one change and 0 pizzas without a change delivered.
 
 I solved this by:
 
-1. 
+1. Using my cleaned up Common Table Expression (CTE) table called `customer_orders_clean`.
+2. Using my cleaned up Common Table Expression (CTE) table called `runner_orders_clean`.
+3. Using a `LEFT JOIN` to join the above two tables together.
+4. Creating a `CASE` statement to indicate 1 when `exclusions` OR `extras` has a value, then using `SUM` to add up the case values.
+5. Creating a `CASE` statement to indicate 1 when `exclusions` AND `extras` do NOT have a value, then using `SUM` to add up the case values.
+6. Using `WHERE` to indicate we only want to look at the orders that were delivered (not cancelled).
+7. Using `GROUP BY` to group the above aggregates by `customer_id`.
+8. Using `ORDER BY` to order the arrangement by `customer_id` ascending.
 
 **SQL Statement:**
 	
 ```sql	
+WITH customer_orders_clean AS (SELECT
+	co.order_id
+	,co.customer_id
+	,co.pizza_id
+	,CASE
+		WHEN co.exclusions = 'null' OR co.exclusions = '' THEN NULL
+   	 	ELSE co.exclusions
+	END AS exclusions
+	,CASE
+		WHEN co.extras = 'null' OR co.extras = '' THEN NULL
+    	ELSE co.extras
+	END AS extras
+	,co.order_time
 
+	FROM pizza_runner.customer_orders AS co
+),
+runner_orders_clean AS (SELECT
+  ro.order_id
+  ,ro.runner_id
+  ,CASE
+      WHEN ro.pickup_time = 'null' OR ro.pickup_time = '' THEN NULL
+      ELSE ro.pickup_time::TIMESTAMP
+  END AS pickup_time
+  ,CASE
+      WHEN ro.distance = 'null' OR ro.distance = '' THEN NULL
+      WHEN ro.distance LIKE '%km' THEN TRIM('km' FROM ro.distance)::DECIMAL
+      ELSE ro.distance::DECIMAL
+  END AS distance
+  ,CASE
+      WHEN ro.duration = 'null' OR ro.duration = '' THEN NULL
+      WHEN ro.duration LIKE '%minutes' THEN TRIM('minutes' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%minute' THEN TRIM('minute' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%mins' THEN TRIM ('mins' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%min' THEN TRIM ('min' FROM ro.duration)::INT
+      ELSE ro.duration::INT
+  END AS duration
+  ,CASE
+      WHEN ro.cancellation = 'null' OR ro.cancellation = '' THEN NULL
+      ELSE ro.cancellation
+  END AS cancellation
+
+  FROM pizza_runner.runner_orders AS ro
+)
+
+SELECT
+co.customer_id AS "Customer"
+,SUM(
+  CASE
+	WHEN co.exclusions IS NOT NULL OR co.extras IS NOT NULL THEN 1
+    ELSE 0
+  END
+)AS "Has Change"
+,SUM(
+  CASE
+	WHEN co.exclusions IS NULL AND co.extras IS NULL THEN 1
+    ELSE 0
+  END
+) AS "No Change"
+
+FROM customer_orders_clean AS co
+LEFT JOIN runner_orders_clean AS ro ON co.order_id = ro.order_id
+
+WHERE
+ro.cancellation IS NULL
+
+GROUP BY "Customer"
+
+ORDER BY "Customer"
 ```
 
 **Table Output:**
 
-| Name 1 | Name 2 |
-| ------ | ------ |
+| Customer | Has Change | No Change |
+| -------- | ---------- | --------- |
+| 101      | 0          | 2         |
+| 102      | 0          | 3         |
+| 103      | 3          | 0         |
+| 104      | 2          | 1         |
+| 105      | 1          | 0         |
 
 **Answer:**
-- (answer)
+- Customer 101 has 0 pizzas with one change and 2 pizzas without a change.
+- Customer 102 has 0 pizzas with one change and 3 pizzas without a change.
+- Customer 103 has 3 pizzas with one change and 0 pizzas without a change.
+- Customer 104 has 2 pizzas with one change and 1 pizza without a change.
+- Customer 105 has 1 pizza with one change and 0 pizzas without a change.
 
 ### 8. How many pizzas were delivered that had both exclusions and extras?
 __________________________________________________________________________
