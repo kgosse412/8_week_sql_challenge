@@ -1,3 +1,15 @@
+# Table of Contents
+[1. How many pizzas were ordered?](#1.-How-many-pizzas-were-ordered?)
+
+[2. How many unique customer orders were made?](https://github.com/kgosse412/8_week_sql_challenge/blob/main/Case%20Study%20%232%20-%20Pizza%20Runner/A_PizzaMetrics.md#2-how-many-unique-customer-orders-were-made)
+
+[3. How many successful orders were delivered by each runner?](https://github.com/kgosse412/8_week_sql_challenge/blob/main/Case%20Study%20%232%20-%20Pizza%20Runner/A_PizzaMetrics.md#3-how-many-successful-orders-were-delivered-by-each-runner)
+
+[4. How many of each type of pizza was delivered?](https://github.com/kgosse412/8_week_sql_challenge/blob/main/Case%20Study%20%232%20-%20Pizza%20Runner/A_PizzaMetrics.md#4-how-many-of-each-type-of-pizza-was-delivered)
+
+[5. How many Vegetarian and Meatlovers were ordered by each customer?](https://github.com/kgosse412/8_week_sql_challenge/blob/main/Case%20Study%20%232%20-%20Pizza%20Runner/A_PizzaMetrics.md#5-how-many-vegetarian-and-meatlovers-were-ordered-by-each-customer)
+
+# Question and Answers
 ### 1. How many pizzas were ordered?
 ____________________________________
 **Overview:**
