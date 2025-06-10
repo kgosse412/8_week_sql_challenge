@@ -44,7 +44,7 @@ I solved this by:
 SELECT
 CASE 
 	WHEN EXTRACT(WEEK FROM r.registration_date) = 53 THEN 1
-    ELSE EXTRACT(WEEK FROM r.registration_date) + 1
+	ELSE EXTRACT(WEEK FROM r.registration_date) + 1
 END AS "Week"
 ,COUNT(r.runner_id) AS "Runner Signup"
 
