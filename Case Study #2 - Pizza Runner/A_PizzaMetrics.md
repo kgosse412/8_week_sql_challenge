@@ -567,27 +567,90 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| customer_orders_clean | Contains the number of pizzas ordered and the changes to each pizza |
+| runner_orders_clean | Contains information on what pizzas were delivered and what pizza orders were cancelled |
 
 Expected Results:
-- (expected result) 
+- Only 1 pizza was delivered with both exclusions and extras.
 
 I solved this by:
 
-1. 
+1. Using my cleaned up Common Table Expression (CTE) table called `customer_orders_clean`.
+2. Using my cleaned up Common Table Expression (CTE) table called `runner_orders_clean`.
+3. Using a `LEFT JOIN` to join the above two tables together.
+4. Creating a `CASE` statement to indicate 1 when `exclusions` AND `extras` has a value, then using `SUM` to add up the case values.
+5. Using `WHERE` to indicate we only want to look at the orders that were delivered (not cancelled).
 
 **SQL Statement:**
 	
 ```sql	
+WITH customer_orders_clean AS (SELECT
+	co.order_id
+	,co.customer_id
+	,co.pizza_id
+	,CASE
+		WHEN co.exclusions = 'null' OR co.exclusions = '' THEN NULL
+   	 	ELSE co.exclusions
+	END AS exclusions
+	,CASE
+		WHEN co.extras = 'null' OR co.extras = '' THEN NULL
+    	ELSE co.extras
+	END AS extras
+	,co.order_time
 
+	FROM pizza_runner.customer_orders AS co
+),
+runner_orders_clean AS (SELECT
+  ro.order_id
+  ,ro.runner_id
+  ,CASE
+      WHEN ro.pickup_time = 'null' OR ro.pickup_time = '' THEN NULL
+      ELSE ro.pickup_time::TIMESTAMP
+  END AS pickup_time
+  ,CASE
+      WHEN ro.distance = 'null' OR ro.distance = '' THEN NULL
+      WHEN ro.distance LIKE '%km' THEN TRIM('km' FROM ro.distance)::DECIMAL
+      ELSE ro.distance::DECIMAL
+  END AS distance
+  ,CASE
+      WHEN ro.duration = 'null' OR ro.duration = '' THEN NULL
+      WHEN ro.duration LIKE '%minutes' THEN TRIM('minutes' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%minute' THEN TRIM('minute' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%mins' THEN TRIM ('mins' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%min' THEN TRIM ('min' FROM ro.duration)::INT
+      ELSE ro.duration::INT
+  END AS duration
+  ,CASE
+      WHEN ro.cancellation = 'null' OR ro.cancellation = '' THEN NULL
+      ELSE ro.cancellation
+  END AS cancellation
+
+  FROM pizza_runner.runner_orders AS ro
+)
+
+SELECT
+SUM(
+  CASE
+	WHEN co.exclusions IS NOT NULL AND co.extras IS NOT NULL THEN 1
+    ELSE 0
+  END
+)AS "Has Both Exclusions and Extras"
+
+FROM customer_orders_clean AS co
+LEFT JOIN runner_orders_clean AS ro ON co.order_id = ro.order_id
+
+WHERE
+ro.cancellation IS NULL
 ```
 
 **Table Output:**
 
-| Name 1 | Name 2 |
-| ------ | ------ |
+| Has Both Exclusions and Extras |
+| ------------------------------ |
+| 1                              |
 
 **Answer:**
-- (answer)
+- Only 1 pizza was delivered with both exclusions and extras.
 
 ### 9. What was the total volume of pizzas ordered for each hour of the day?
 ____________________________________________________________________________
