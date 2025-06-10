@@ -6,7 +6,7 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
-| customer_orders | Contains all the pizzas ordered by each customer |
+| customer_orders_clean | Contains all the pizzas ordered by each customer |
 
 Expected Results:
 - There were 14 pizzas ordered.
@@ -59,7 +59,7 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
-| customer_orders | Contains each unique order by a customer |
+| customer_orders_clean | Contains each unique order by a customer |
 
 Expected Results:
 - There are 10 unique orders.
@@ -112,7 +112,7 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
-| runner_orders | Contains information about each runner and the order they ran |
+| runner_orders_clean | Contains information about each runner and the order they ran |
 
 Expected Results:
 - Runner 1 ran 4 orders.
@@ -190,8 +190,8 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
-| customer_order | Contains the pizza that was ordered |
-| runner_order   | Contains the orders that were run   |
+| customer_orders_clean | Contains the pizza that was ordered |
+| runner_orders_clean   | Contains the orders that were run   |
 | pizza_names    | Contains the name of each pizza     |
 
 Expected Results:
@@ -202,9 +202,10 @@ I solved this by:
 
 1. Using my cleaned up Common Table Expression (CTE) table called `customer_orders_clean`.
 2. Using my cleaned up Common Table Expression (CTE) table called `runner_orders_clean`.
-3. Using `COUNT` to count up the number of `pizza_id` delivered.
-4. Using `GROUP BY` to group the above by the `pizza_name`.
-5. Using `WHERE` to exclude any cancelled deliveries since we only want to see what was actually delivered.
+3. Using a `LEFT JOIN` to join the above two tables together AND another `LEFT JOIN` to join the `pizza_names` table.
+4. Using `COUNT` to count up the number of `pizza_id` delivered.
+5. Using `GROUP BY` to group the above by the `pizza_name`.
+6. Using `WHERE` to exclude any cancelled deliveries since we only want to see what was actually delivered.
 
 **SQL Statement:**
 	
@@ -286,27 +287,76 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| customer_orders_clean | Contains each customer and the pizzas they ordered |
+| pizza_names | Contains the names of each pizza |
 
 Expected Results:
-- (expected result) 
+- Customer 101 ordered 2 Meatlovers and 1 Vegetarian.
+- Customer 102 ordered 2 Meatlovers and 1 Vegetarian.
+- Customer 103 ordered 3 Meatlovers and 1 Vegetarian.
+- Customer 104 ordered 3 Meatlovers and 0 Vegetarian.
+- Customer 105 ordered 1 Meatlovers and 0 Vegetarian.
 
 I solved this by:
 
-1. 
+1. Using my cleaned up Common Table Expression (CTE) table called `customer_orders_clean`.
+2. Using a `LEFT JOIN` to join the above table and the `pizza_names` table.
+3. Using `COUNT` to count up the `pizza_id` data.
+4. Using `GROUP BY` to group `customer_id` and `pizza_names` since we want to see how many of each pizza where ordered by each customer.
+5. Using `ORDER BY` to clean up the results a bit and showcase them as ordered by first the customer, then the pizza name.
 
 **SQL Statement:**
 	
 ```sql	
+WITH customer_orders_clean AS (SELECT
+	co.order_id
+	,co.customer_id
+	,co.pizza_id
+	,CASE
+		WHEN co.exclusions = 'null' OR co.exclusions = '' THEN NULL
+   	 	ELSE co.exclusions
+	END AS exclusions
+	,CASE
+		WHEN co.extras = 'null' OR co.extras = '' THEN NULL
+    	ELSE co.extras
+	END AS extras
+	,co.order_time
 
+	FROM pizza_runner.customer_orders AS co
+)
+
+SELECT
+co.customer_id AS "Customer"
+,pn.pizza_name AS "Pizza Name"
+,COUNT(co.pizza_id) AS "Delivered Pizzas"
+
+FROM customer_orders_clean AS co
+LEFT JOIN pizza_names as pn ON co.pizza_id = pn.pizza_id
+
+GROUP BY "Customer", "Pizza Name"
+
+ORDER BY "Customer" ASC, "Pizza Name" ASC
 ```
 
 **Table Output:**
 
-| Name 1 | Name 2 |
-| ------ | ------ |
+| Customer | Pizza Name | Delivered Pizzas |
+| -------- | ---------- | ---------------- |
+| 101      | Meatlovers | 2                |
+| 101      | Vegetarian | 1                |
+| 102      | Meatlovers | 2                |
+| 102      | Vegetarian | 1                |
+| 103      | Meatlovers | 3                |
+| 103      | Vegetarian | 1                |
+| 104      | Meatlovers | 3                |
+| 105      | Vegetarian | 1                |
 
 **Answer:**
-- (answer)
+- Customer 101 ordered 2 Meatlovers and 1 Vegetarian.
+- Customer 102 ordered 2 Meatlovers and 1 Vegetarian.
+- Customer 103 ordered 3 Meatlovers and 1 Vegetarian.
+- Customer 104 only ordered 3 Meatlovers.
+- Customer 105 only ordered 1 Vegetarian.
 
 ### 6. What was the maximum number of pizzas delivered in a single order?
 _________________________________________________________________________
