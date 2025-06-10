@@ -1,4 +1,5 @@
-# Table of Contents
+# Pizza Metrics
+## Table of Contents
 [1. How many pizzas were ordered?](#1-How-many-pizzas-were-ordered)
 
 [2. How many unique customer orders were made?](#2-How-many-unique-customer-orders-were-made)
@@ -19,7 +20,7 @@
 
 [10. What was the volume of orders for each day of the week?](#10-What-was-the-volume-of-orders-for-each-day-of-the-week)
 
-# Question and Answers
+## Question and Answers
 ### 1. How many pizzas were ordered?
 ____________________________________
 **Overview:**
