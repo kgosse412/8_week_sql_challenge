@@ -560,24 +560,80 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| runner_orders_clean | Contains the runners and the number of runner deliveries |
 
 Expected Results:
-- (expected result) 
+- Runner 1 has a 100% success rate (no cancellations).
+- Runner 2 has a 75% success rate (1 cancellation).
+- Runner 3 has a 50% success rate (1 cancellation).
 
 I solved this by:
 
-1. 
+1. Using my cleaned up Common Table Expression (CTE) table called `runner_orders_clean`.
+2. Creating a subquery that creates a column with a 1 for every successful delivery and 0 for every cancelled order.
+3. Using `SUM(run_count.successful_run) * 100 / COUNT(run_count.runner_id)` to figure out the percentage of successful deliveries. This adds up the number of successful deliveries, multiplies it by 100 (to make it a percentage), and divides by the number of deliveries the runner had.
+4. Using `GROUP BY` to group the above by `"Runner"`.
+5. Sorting the output by `"Runner"` by using `ORDER BY`.
 
 **SQL Statement:**
 	
 ```sql	
+WITH runner_orders_clean AS (SELECT
+  ro.order_id
+  ,ro.runner_id
+  ,CASE
+      WHEN ro.pickup_time = 'null' OR ro.pickup_time = '' THEN NULL
+      ELSE ro.pickup_time::TIMESTAMP
+  END AS pickup_time
+  ,CASE
+      WHEN ro.distance = 'null' OR ro.distance = '' THEN NULL
+      WHEN ro.distance LIKE '%km' THEN TRIM('km' FROM ro.distance)::DECIMAL
+      ELSE ro.distance::DECIMAL
+  END AS distance
+  ,CASE
+      WHEN ro.duration = 'null' OR ro.duration = '' THEN NULL
+      WHEN ro.duration LIKE '%minutes' THEN TRIM('minutes' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%minute' THEN TRIM('minute' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%mins' THEN TRIM ('mins' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%min' THEN TRIM ('min' FROM ro.duration)::INT
+      ELSE ro.duration::INT
+  END AS duration
+  ,CASE
+      WHEN ro.cancellation = 'null' OR ro.cancellation = '' THEN NULL
+      ELSE ro.cancellation
+  END AS cancellation
 
+  FROM pizza_runner.runner_orders AS ro
+)
+
+SELECT
+run_count.runner_id AS "Runner"
+,SUM(run_count.successful_run) * 100 / COUNT(run_count.runner_id) AS "Successful Delivery %"
+
+FROM (SELECT
+	ro.runner_id
+	,CASE
+		WHEN ro.cancellation IS NULL THEN 1
+    	ELSE 0
+	END AS successful_run
+
+	FROM runner_orders_clean as ro
+) AS run_count
+
+GROUP BY "Runner"
+
+ORDER BY "Runner"
 ```
 
 **Table Output:**
 
-| Name 1 | Name 2 |
-| ------ | ------ |
+| Runner | Successful Delivery % |
+| ------ | --------------------- |
+| 1      | 100                   |
+| 2      | 75                    |
+| 3      | 50                    |
 
 **Answer:**
-- (answer)
+- Runner 1 has a 100% success rate.
+- Runner 2 has a 75% success rate.
+- Runner 3 has a 50% success rate.
