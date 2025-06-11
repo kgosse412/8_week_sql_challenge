@@ -109,21 +109,20 @@ Tables Used:
 | Table | Why |
 | ----- | --- |
 | customer_orders_clean | Contains information on the extra toppings added for each order |
-| pizza_recipes_unnested | Contains information on the toppings |
+| pizza_toppings | Contains information on the topping names |
 
 Expected Results:
-- Bacon is the most commonly added extra.
+- Bacon is the most commonly added extra with it being added 4 times.
 
 I solved this by:
 
 1. Using my cleaned up Common Table Expression (CTE) table called `customer_orders_clean`.
-2. Using my cleaned up Common Table Expression (CTE) table called `pizza_recipes_unnested`.
-3. Creating a subquery to unnest the `extras` column and convert it to an integer by using `UNNEST(STRING_TO_ARRAY(co.extras, ','))::INT`.
-4. Joining the subquery to the `pizza_recipes_unnested` CTE.
-5. Using `COUNT` to count the number of each extra topping.
-6. Using `GROUP BY` to group the above by the `"Topping Name"`.
-7. Sorting the output by the count in a descending manner by using `ORDER BY "Extras Count" DESC`.
-8. Limiting the output to the top 1 by using `LIMIT`.
+2. Creating a subquery to unnest the `extras` column and convert it to an integer by using `UNNEST(STRING_TO_ARRAY(co.extras, ','))::INT`.
+3. Joining the subquery to the `pizza_recipes_unnested` CTE.
+4. Using `COUNT` to count the number of each extra topping.
+5. Using `GROUP BY` to group the above by the `"Topping Name"`.
+6. Sorting the output by the count in a descending manner by using `ORDER BY "Extras Count" DESC`.
+7. Limiting the output to the top 1 by using `LIMIT`.
 
 **SQL Statement:**
 	
@@ -143,23 +142,6 @@ WITH customer_orders_clean AS (SELECT
 	,co.order_time
 
 	FROM pizza_runner.customer_orders AS co
-),
-pizza_recipes_unnested AS (SELECT
-upr.pizza_id
-,pn.pizza_name
-,upr.topping_id
-,pt.topping_name
-
-FROM (SELECT
-  pr.pizza_id
-  ,UNNEST(STRING_TO_ARRAY(pr.toppings, ','))::INT AS topping_id
-
-  FROM pizza_runner.pizza_recipes AS pr
-) AS upr -- unnested_pizza_recipes
-JOIN pizza_runner.pizza_toppings AS pt ON upr.topping_id = pt.topping_id
-JOIN pizza_runner.pizza_names AS pn ON upr.pizza_id = pn.pizza_id
-
-ORDER BY upr.pizza_id ASC, upr.topping_id ASC
 )
 
 SELECT
@@ -171,7 +153,7 @@ FROM (SELECT
 
   FROM customer_orders_clean AS co
 ) AS uco
-JOIN pizza_recipes_unnested AS prn ON uco.extras = prn.topping_id
+JOIN pizza_toppings AS prn ON uco.extras = prn.topping_id
 
 GROUP BY "Topping Name"
 
@@ -197,27 +179,68 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| customer_orders_clean | Contains information on the extra toppings added for each order |
+| pizza_toppings | Contains information on the topping names |
 
 Expected Results:
-- (expected result) 
+- Cheese is the most common exclusion with it being excluded 4 times.
 
 I solved this by:
 
-1. 
+1. Using my cleaned up Common Table Expression (CTE) table called `customer_orders_clean`.
+2. Creating a subquery to unnest the `exclusions` column and convert it to an integer by using `UNNEST(STRING_TO_ARRAY(co.exclusions, ','))::INT`.
+3. Joining the subquery to the `pizza_recipes_unnested` CTE.
+4. Using `COUNT` to count the number of each excluded topping.
+5. Using `GROUP BY` to group the above by the `"Topping Name"`.
+6. Sorting the output by the count in a descending manner by using `ORDER BY "Exclusions Count" DESC`.
+7. Limiting the output to the top 1 by using `LIMIT`. 
 
 **SQL Statement:**
 	
 ```sql	
+WITH customer_orders_clean AS (SELECT
+	co.order_id
+	,co.customer_id
+	,co.pizza_id
+	,CASE
+		WHEN co.exclusions = 'null' OR co.exclusions = '' THEN NULL
+   	 	ELSE co.exclusions
+	END AS exclusions
+	,CASE
+		WHEN co.extras = 'null' OR co.extras = '' THEN NULL
+    	ELSE co.extras
+	END AS extras
+	,co.order_time
 
+	FROM pizza_runner.customer_orders AS co
+)
+
+SELECT
+prn.topping_name AS "Topping Name"
+,COUNT(uco.exclusions) AS "Exclusions Count"
+
+FROM (SELECT
+  UNNEST(STRING_TO_ARRAY(co.exclusions, ','))::INT AS exclusions
+
+  FROM customer_orders_clean AS co
+) AS uco
+JOIN pizza_toppings AS prn ON uco.exclusions = prn.topping_id
+
+GROUP BY "Topping Name"
+
+ORDER BY "Exclusions Count" DESC
+
+LIMIT 1
 ```
 
 **Table Output:**
 
-| Name 1 | Name 2 |
-| ------ | ------ |
+| Topping Name | Exclusions Count |
+| ------------ | ---------------- |
+| Cheese       | 4                |
 
 **Answer:**
-- (answer)
+- Cheese is the most excluded topping (but why??).
 
 ### 4. Generate an order item for each record in the customers_orders table in the format of one of the following:
 ### - Meat Lovers
