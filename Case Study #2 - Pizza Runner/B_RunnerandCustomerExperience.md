@@ -301,27 +301,102 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| customer_orders_clean | Contains information on when the customer |
+| runner_orders_clean | Contains information on when the distance to the customers place |
 
 Expected Results:
-- (expected result) 
+- Customer 101 is roughly 20 km away.
+- Customer 102 is roughly 17 km away.
+- Customer 103 is roughly 23 km away.
+- Customer 104 is roughly 10 km away.
+- Customer 105 is roughly 25 km away.
 
 I solved this by:
 
-1. 
+1. Using my cleaned up Common Table Expression (CTE) table called `customer_orders_clean`.
+2. Using my cleaned up Common Table Expression (CTE) table called `runner_orders_clean`.
+3. Using `ROUND(AVG(ro.distance))` to figure out the average rounded distance of each customer.
+4. Grouping the above by `"Customer"` by using `GROUP BY`.
+5. Sorting the output by `"Customer"` by using `ORDER BY`.
 
 **SQL Statement:**
 	
 ```sql	
+WITH customer_orders_clean AS (SELECT
+	co.order_id
+	,co.customer_id
+	,co.pizza_id
+	,CASE
+		WHEN co.exclusions = 'null' OR co.exclusions = '' THEN NULL
+   	 	ELSE co.exclusions
+	END AS exclusions
+	,CASE
+		WHEN co.extras = 'null' OR co.extras = '' THEN NULL
+    	ELSE co.extras
+	END AS extras
+	,co.order_time
 
+	FROM pizza_runner.customer_orders AS co
+),
+runner_orders_clean AS (SELECT
+  ro.order_id
+  ,ro.runner_id
+  ,CASE
+      WHEN ro.pickup_time = 'null' OR ro.pickup_time = '' THEN NULL
+      ELSE ro.pickup_time::TIMESTAMP
+  END AS pickup_time
+  ,CASE
+      WHEN ro.distance = 'null' OR ro.distance = '' THEN NULL
+      WHEN ro.distance LIKE '%km' THEN TRIM('km' FROM ro.distance)::DECIMAL
+      ELSE ro.distance::DECIMAL
+  END AS distance
+  ,CASE
+      WHEN ro.duration = 'null' OR ro.duration = '' THEN NULL
+      WHEN ro.duration LIKE '%minutes' THEN TRIM('minutes' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%minute' THEN TRIM('minute' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%mins' THEN TRIM ('mins' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%min' THEN TRIM ('min' FROM ro.duration)::INT
+      ELSE ro.duration::INT
+  END AS duration
+  ,CASE
+      WHEN ro.cancellation = 'null' OR ro.cancellation = '' THEN NULL
+      ELSE ro.cancellation
+  END AS cancellation
+
+  FROM pizza_runner.runner_orders AS ro
+)
+
+SELECT
+co.customer_id AS "Customer"
+,ROUND(AVG(ro.distance)) AS "Avg Distance"
+
+FROM customer_orders_clean AS co
+INNER JOIN runner_orders_clean AS ro ON co.order_id = ro.order_id
+
+WHERE
+ro.cancellation IS NULL
+
+GROUP BY "Customer"
+
+ORDER BY "Customer"
 ```
 
 **Table Output:**
 
-| Name 1 | Name 2 |
-| ------ | ------ |
+| Customer | Avg Distance |
+| -------- | ------------ |
+| 101      | 20           |
+| 102      | 17           |
+| 103      | 23           |
+| 104      | 10           |
+| 105      | 25           |
 
 **Answer:**
-- (answer)
+- Customer 101 is roughly 20 km away.
+- Customer 102 is roughly 17 km away.
+- Customer 103 is roughly 23 km away.
+- Customer 104 is roughly 10 km away.
+- Customer 105 is roughly 25 km away.
 
 ### 5. What was the difference between the longest and shortest delivery times for all orders?
 ______________________________________________________________________________________________
