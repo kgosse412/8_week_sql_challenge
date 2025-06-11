@@ -1,3 +1,18 @@
+# Ingredient Optimization
+## Table of Contents
+[1. What are the standard ingredients for each pizza?](#1-what-are-the-standard-ingredients-for-each-pizza)
+
+[2. What was the most commonly added extra?](#2-what-was-the-most-commonly-added-extra)
+
+[3. What was the most common exclusion?](#3-what-was-the-most-common-exclusion)
+
+[4. Generate an order item for each record in the customers_orders table in the format of one of the following:](#4-generate-an-order-item-for-each-record-in-the-customers_orders-table-in-the-format-of-one-of-the-following)
+
+[5. Generate an alphabetically ordered comma separated ingredient list for each pizza order from the customer_orders table and add a 2x in front of any relevant ingredients](#5-generate-an-alphabetically-ordered-comma-separated-ingredient-list-for-each-pizza-order-from-the-customer_orders-table-and-add-a-2x-in-front-of-any-relevant-ingredients)
+
+[6. What is the total quantity of each ingredient used in all delivered pizzas sorted by most frequent first?](#6-what-is-the-total-quantity-of-each-ingredient-used-in-all-delivered-pizzas-sorted-by-most-frequent-first)
+
+## Questions and Answers
 ### 1. What are the standard ingredients for each pizza?
 ________________________________________________________
 **Overview:**
