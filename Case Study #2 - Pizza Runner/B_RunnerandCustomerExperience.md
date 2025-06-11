@@ -407,27 +407,61 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| runner_orders_clean | Contains the delivery times of each order |
 
 Expected Results:
-- (expected result) 
+- 30 minutes
 
 I solved this by:
 
-1. 
+1. Using my cleaned up Common Table Expression (CTE) table called `runner_orders_clean`.
+2. Finding the longest duration time by using `MAX` and finding the shortest duration time by using `MIN`, then subtracting min from max.
 
 **SQL Statement:**
 	
 ```sql	
+WITH runner_orders_clean AS (SELECT
+  ro.order_id
+  ,ro.runner_id
+  ,CASE
+      WHEN ro.pickup_time = 'null' OR ro.pickup_time = '' THEN NULL
+      ELSE ro.pickup_time::TIMESTAMP
+  END AS pickup_time
+  ,CASE
+      WHEN ro.distance = 'null' OR ro.distance = '' THEN NULL
+      WHEN ro.distance LIKE '%km' THEN TRIM('km' FROM ro.distance)::DECIMAL
+      ELSE ro.distance::DECIMAL
+  END AS distance
+  ,CASE
+      WHEN ro.duration = 'null' OR ro.duration = '' THEN NULL
+      WHEN ro.duration LIKE '%minutes' THEN TRIM('minutes' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%minute' THEN TRIM('minute' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%mins' THEN TRIM ('mins' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%min' THEN TRIM ('min' FROM ro.duration)::INT
+      ELSE ro.duration::INT
+  END AS duration
+  ,CASE
+      WHEN ro.cancellation = 'null' OR ro.cancellation = '' THEN NULL
+      ELSE ro.cancellation
+  END AS cancellation
 
+  FROM pizza_runner.runner_orders AS ro
+)
+
+SELECT
+MAX(ro.duration) - MIN(ro.duration) AS "Duration Difference"
+
+FROM runner_orders_clean as ro
 ```
 
 **Table Output:**
 
-| Name 1 | Name 2 |
-| ------ | ------ |
+| Duration Difference |
+| ------------------- |
+| 30                  |
 
 **Answer:**
-- (answer)
+- The difference between the longest and shortest delivery times is 30 minutes.
 
 ### 6. What was the average speed for each runner for each delivery and do you notice any trend for these values?
 _________________________________________________________________________________________________________________
