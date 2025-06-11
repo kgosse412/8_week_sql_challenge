@@ -188,27 +188,109 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| customer_orders_clean | Contains information on when the order was placed |
+| runner_orders_clean | Contains information on when the order was picked up |
 
 Expected Results:
-- (expected result) 
+- 1 pizza takes about 12 min.
+- 2 pizzas take about 18 min.
+- 3 pizzas take about 29 min.
 
 I solved this by:
 
-1. 
+1. Using my cleaned up Common Table Expression (CTE) table called `customer_orders_clean`.
+2. Using my cleaned up Common Table Expression (CTE) table called `runner_orders_clean`.
+3. Creating a new CTE called `date_diff`. In this CTE, I use `EXTRACT(EPOCH FROM ro.pickup_time - co.order_time)` to figure out the time difference in seconds between when the pizza order is placed and when it is picked up (I chose seconds because figuring out the difference in minutes doesn't include seconds and can underestimate our average). I used `COUNT` to figure out how many pizzas were included in each order, and I also used a `WHERE` to exclude any cancelled orders.
+4. Querying `date_diff` to get the rounded average of the seconds calculated in `date_diff` divided by 60 (to convert it to minutes). This is done using `ROUND(AVG(dd.time_diff)/60)`.
+5. Grouping the above by the `"Number of Pizzas"` by using `GROUP BY`.
+6. Sorting the output by `"Number of Pizzas"` by using `ORDER BY`.
 
 **SQL Statement:**
 	
 ```sql	
+WITH customer_orders_clean AS (SELECT
+	co.order_id
+	,co.customer_id
+	,co.pizza_id
+	,CASE
+		WHEN co.exclusions = 'null' OR co.exclusions = '' THEN NULL
+   	 	ELSE co.exclusions
+	END AS exclusions
+	,CASE
+		WHEN co.extras = 'null' OR co.extras = '' THEN NULL
+    	ELSE co.extras
+	END AS extras
+	,co.order_time
 
+	FROM pizza_runner.customer_orders AS co
+),
+runner_orders_clean AS (SELECT
+  ro.order_id
+  ,ro.runner_id
+  ,CASE
+      WHEN ro.pickup_time = 'null' OR ro.pickup_time = '' THEN NULL
+      ELSE ro.pickup_time::TIMESTAMP
+  END AS pickup_time
+  ,CASE
+      WHEN ro.distance = 'null' OR ro.distance = '' THEN NULL
+      WHEN ro.distance LIKE '%km' THEN TRIM('km' FROM ro.distance)::DECIMAL
+      ELSE ro.distance::DECIMAL
+  END AS distance
+  ,CASE
+      WHEN ro.duration = 'null' OR ro.duration = '' THEN NULL
+      WHEN ro.duration LIKE '%minutes' THEN TRIM('minutes' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%minute' THEN TRIM('minute' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%mins' THEN TRIM ('mins' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%min' THEN TRIM ('min' FROM ro.duration)::INT
+      ELSE ro.duration::INT
+  END AS duration
+  ,CASE
+      WHEN ro.cancellation = 'null' OR ro.cancellation = '' THEN NULL
+      ELSE ro.cancellation
+  END AS cancellation
+
+  FROM pizza_runner.runner_orders AS ro
+),
+date_diff AS (SELECT
+	co.order_id
+    ,COUNT(co.order_id) AS order_cnt
+	,ro.pickup_time
+	,co.order_time
+	,EXTRACT(EPOCH FROM ro.pickup_time - co.order_time) AS time_diff
+
+	FROM customer_orders_clean AS co
+	INNER JOIN runner_orders_clean AS ro ON co.order_id = ro.order_id
+
+	WHERE
+	ro.pickup_time IS NOT NULL
+    
+    GROUP BY co.order_id, ro.pickup_time, co.order_time
+)
+
+SELECT
+dd.order_cnt AS "Number of Pizzas"
+,ROUND(AVG(dd.time_diff)/60) AS "Minutes to Prep"
+
+FROM date_diff AS dd
+
+GROUP BY "Number of Pizzas"
+
+ORDER BY "Number of Pizzas"
 ```
 
 **Table Output:**
 
-| Name 1 | Name 2 |
-| ------ | ------ |
+| Number of Pizzas | Minutes to Prep |
+| ---------------- | --------------- |
+| 1                | 12              |
+| 2                | 18              |
+| 3                | 29              |
 
 **Answer:**
-- (answer)
+- 1 pizza takes 12 minutes.
+- 2 pizzas take 18 minutes total, or 9 minutes each.
+- 3 pizzas take 29 minutes total, or ~ 10 minutes each.
+- This shows there is a correlation between the number of pizzas and the time it takes to prep them, with 2 pizzas being the best prep time.
 
 ### 4. What was the average distance travelled for each customer?
 _________________________________________________________________
