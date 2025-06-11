@@ -108,27 +108,86 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| customer_orders_clean | Contains information on the extra toppings added for each order |
+| pizza_recipes_unnested | Contains information on the toppings |
 
 Expected Results:
-- (expected result) 
+- Bacon is the most commonly added extra.
 
 I solved this by:
 
-1. 
+1. Using my cleaned up Common Table Expression (CTE) table called `customer_orders_clean`.
+2. Using my cleaned up Common Table Expression (CTE) table called `pizza_recipes_unnested`.
+3. Creating a subquery to unnest the `extras` column and convert it to an integer by using `UNNEST(STRING_TO_ARRAY(co.extras, ','))::INT`.
+4. Joining the subquery to the `pizza_recipes_unnested` CTE.
+5. Using `COUNT` to count the number of each extra topping.
+6. Using `GROUP BY` to group the above by the `"Topping Name"`.
+7. Sorting the output by the count in a descending manner by using `ORDER BY "Extras Count" DESC`.
+8. Limiting the output to the top 1 by using `LIMIT`.
 
 **SQL Statement:**
 	
 ```sql	
+WITH customer_orders_clean AS (SELECT
+	co.order_id
+	,co.customer_id
+	,co.pizza_id
+	,CASE
+		WHEN co.exclusions = 'null' OR co.exclusions = '' THEN NULL
+   	 	ELSE co.exclusions
+	END AS exclusions
+	,CASE
+		WHEN co.extras = 'null' OR co.extras = '' THEN NULL
+    	ELSE co.extras
+	END AS extras
+	,co.order_time
 
+	FROM pizza_runner.customer_orders AS co
+),
+pizza_recipes_unnested AS (SELECT
+upr.pizza_id
+,pn.pizza_name
+,upr.topping_id
+,pt.topping_name
+
+FROM (SELECT
+  pr.pizza_id
+  ,UNNEST(STRING_TO_ARRAY(pr.toppings, ','))::INT AS topping_id
+
+  FROM pizza_runner.pizza_recipes AS pr
+) AS upr -- unnested_pizza_recipes
+JOIN pizza_runner.pizza_toppings AS pt ON upr.topping_id = pt.topping_id
+JOIN pizza_runner.pizza_names AS pn ON upr.pizza_id = pn.pizza_id
+
+ORDER BY upr.pizza_id ASC, upr.topping_id ASC
+)
+
+SELECT
+prn.topping_name AS "Topping Name"
+,COUNT(uco.extras) AS "Extras Count"
+
+FROM (SELECT
+  UNNEST(STRING_TO_ARRAY(co.extras, ','))::INT AS extras
+
+  FROM customer_orders_clean AS co
+) AS uco
+JOIN pizza_recipes_unnested AS prn ON uco.extras = prn.topping_id
+
+GROUP BY "Topping Name"
+
+ORDER BY "Extras Count" DESC
+
+LIMIT 1
 ```
 
 **Table Output:**
 
-| Name 1 | Name 2 |
-| ------ | ------ |
+| Topping Name | Extras Count |
+| ------------ | ------------ |
+| Bacon        | 4            |
 
 **Answer:**
-- (answer)
+- Bacon is the most commonly added extra.
 
 ### 3. What was the most common exclusion?
 __________________________________________
