@@ -472,27 +472,84 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| runner_orders_clean | Contains the distance and delivery times of each order for each runner |
 
 Expected Results:
-- (expected result) 
+| Order ID | Runner | Avg Speed |
+| -------- | ------ | --------- |
+| 1        | 1      | 37.5      |
+| 2        | 1      | 44.4      |
+| 3        | 1      | 40.2      |
+| 4        | 2      | 35.1      |
+| 5        | 3      | 40.0      |
+| 7        | 2      | 60.0      |
+| 8        | 2      | 93.6      |
+| 10       | 1      | 60.0      |
 
 I solved this by:
 
-1. 
+1. Using my cleaned up Common Table Expression (CTE) table called `runner_orders_clean`.
+2. Using `ROUND((ro.distance / ro.duration) * 60, 1)` to figure out the runner's speed in km / hr and rounding it to 1 decimal.
+3. Using `WHERE` to exclude any cancelled orders.
 
 **SQL Statement:**
 	
 ```sql	
+WITH runner_orders_clean AS (SELECT
+  ro.order_id
+  ,ro.runner_id
+  ,CASE
+      WHEN ro.pickup_time = 'null' OR ro.pickup_time = '' THEN NULL
+      ELSE ro.pickup_time::TIMESTAMP
+  END AS pickup_time
+  ,CASE
+      WHEN ro.distance = 'null' OR ro.distance = '' THEN NULL
+      WHEN ro.distance LIKE '%km' THEN TRIM('km' FROM ro.distance)::DECIMAL
+      ELSE ro.distance::DECIMAL
+  END AS distance
+  ,CASE
+      WHEN ro.duration = 'null' OR ro.duration = '' THEN NULL
+      WHEN ro.duration LIKE '%minutes' THEN TRIM('minutes' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%minute' THEN TRIM('minute' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%mins' THEN TRIM ('mins' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%min' THEN TRIM ('min' FROM ro.duration)::INT
+      ELSE ro.duration::INT
+  END AS duration
+  ,CASE
+      WHEN ro.cancellation = 'null' OR ro.cancellation = '' THEN NULL
+      ELSE ro.cancellation
+  END AS cancellation
 
+  FROM pizza_runner.runner_orders AS ro
+)
+
+
+SELECT
+ro.order_id AS "Order ID"
+,ro.runner_id AS "Runner"
+,ROUND((ro.distance / ro.duration) * 60, 1) AS "km / hr"
+
+FROM runner_orders_clean as ro
+
+WHERE
+ro.cancellation IS NULL
 ```
 
 **Table Output:**
 
-| Name 1 | Name 2 |
-| ------ | ------ |
+| Order ID | Runner | km / hr |
+| -------- | ------ | ------- |
+| 1        | 1      | 37.5    |
+| 2        | 1      | 44.4    |
+| 3        | 1      | 40.2    |
+| 4        | 2      | 35.1    |
+| 5        | 3      | 40.0    |
+| 7        | 2      | 60.0    |
+| 8        | 2      | 93.6    |
+| 10       | 1      | 60.0    |
 
 **Answer:**
-- (answer)
+- See table above.
 
 ### 7. What is the successful delivery percentage for each runner?
 __________________________________________________________________
