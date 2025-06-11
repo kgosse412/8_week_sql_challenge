@@ -614,7 +614,7 @@ FROM (SELECT
 	ro.runner_id
 	,CASE
 		WHEN ro.cancellation IS NULL THEN 1
-    	ELSE 0
+		ELSE 0
 	END AS successful_run
 
 	FROM runner_orders_clean as ro
