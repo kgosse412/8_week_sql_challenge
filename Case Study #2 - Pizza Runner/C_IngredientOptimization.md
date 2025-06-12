@@ -145,7 +145,7 @@ WITH customer_orders_clean AS (SELECT
 )
 
 SELECT
-prn.topping_name AS "Topping Name"
+pt.topping_name AS "Topping Name"
 ,COUNT(uco.extras) AS "Extras Count"
 
 FROM (SELECT
@@ -153,7 +153,7 @@ FROM (SELECT
 
   FROM customer_orders_clean AS co
 ) AS uco
-JOIN pizza_toppings AS prn ON uco.extras = prn.topping_id
+JOIN pizza_toppings AS pt ON uco.extras = pt.topping_id
 
 GROUP BY "Topping Name"
 
@@ -216,7 +216,7 @@ WITH customer_orders_clean AS (SELECT
 )
 
 SELECT
-prn.topping_name AS "Topping Name"
+pt.topping_name AS "Topping Name"
 ,COUNT(uco.exclusions) AS "Exclusions Count"
 
 FROM (SELECT
@@ -224,7 +224,7 @@ FROM (SELECT
 
   FROM customer_orders_clean AS co
 ) AS uco
-JOIN pizza_toppings AS prn ON uco.exclusions = prn.topping_id
+JOIN pizza_toppings AS pt ON uco.exclusions = pt.topping_id
 
 GROUP BY "Topping Name"
 
@@ -243,38 +243,140 @@ LIMIT 1
 - Cheese is the most excluded topping (but why??).
 
 ### 4. Generate an order item for each record in the customers_orders table in the format of one of the following:
-### - Meat Lovers
-### - Meat Lovers - Exclude Beef
-### - Meat Lovers - Extra Bacon
-### - Meat Lovers - Exclude Cheese, Bacon - Extra Mushroom, Peppers
 __________________________________________________________________________________________________________________
+**Format**
+- Meat Lovers
+- Meat Lovers - Exclude Beef
+- Meat Lovers - Extra Bacon
+- Meat Lovers - Exclude Cheese, Bacon - Extra Mushroom, Peppers
+
 **Overview:**
 
 Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| customer_orders_clean | Contains information about each order, including extras and excluded toppings |
+| exclusions_list | Contains information on the exclusions toppings in CSV text form |
+| extras_list | Contains information on the extra toppings in a CSV text form |
 
 Expected Results:
-- (expected result) 
+
+| order_id | pizza |
+| -------- | ----- |
+| 1        | Meatlovers |
+| 2        | Meatlovers |
+| 3        | Meatlovers |
+| 3        | Vegetarian |
+| 4        | Meatlovers - Exclude Cheese |
+| 4        | Meatlovers - Exclude Cheese |
+| 4        | Vegetarian - Exclude Cheese |
+| 5        | Meatlovers - Extra Bacon    |
+| 6        | Vegetarian |
+| 7        | Vegetarian - Extra Bacon    |
+| 8        | Meatlovers |
+| 9        | Meatlovers - Exclude Cheese - Extra Bacon, Chicken |
+| 10       | Meatlovers |
+| 10       | Meatlovers - Exclude BBQ Sauce, Mushrooms - Extra Bacon, Cheese |
 
 I solved this by:
 
-1. 
+1. Using my cleaned up Common Table Expression (CTE) table called `customer_orders_clean`.
+2. Creating a CTE called `exclusions_list` that decoupled `exclusions` into individual rows, replaced the `topping_id` with `topping_name`, and converted that back into a CSV list.
+3. Creating a CTE called `extras_list` that decoupled `extras` into individual rows, replaced the `topping_id` with `topping_name`, and converted that back into a CSV list.
+4. Using `LEFT JOIN` to join `exclusions_list`, `extras_list`, and `pizza_names` to `customer_orders_clean`.
+5. Using `CONCAT(pn.pizza_name, COALESCE(' - Exclude ' || excl.exclusions, ''), COALESCE(' - Extra ' || extl.extras, ''))` to join all the parts of the strings together. `COALESCE` checks which value is the first non-null argument, then appends that to the existing string.
+6. Sorting the output by the `"Order ID"` by using `ORDER BY`.
 
 **SQL Statement:**
 	
 ```sql	
+WITH customer_orders_clean AS (SELECT
+	ROW_NUMBER() OVER() AS row
+    ,co.order_id
+	,co.customer_id
+	,co.pizza_id
+	,CASE
+		WHEN co.exclusions = 'null' OR co.exclusions = '' THEN NULL
+   	 	ELSE co.exclusions
+	END AS exclusions
+	,CASE
+		WHEN co.extras = 'null' OR co.extras = '' THEN NULL
+    	ELSE co.extras
+	END AS extras
+	,co.order_time
 
+	FROM pizza_runner.customer_orders AS co
+),
+extras_list AS (SELECT
+  uco.row
+  ,STRING_AGG(pt.topping_name, ', ') AS extras
+
+  FROM (SELECT
+    co.row
+    ,UNNEST(STRING_TO_ARRAY(co.extras, ','))::INT AS extras
+
+    FROM customer_orders_clean AS co
+  ) AS uco
+  JOIN pizza_toppings AS pt ON uco.extras = pt.topping_id
+
+  GROUP BY uco.row
+
+  ORDER BY row
+),
+exclusions_list AS (SELECT
+  uco.row
+  ,STRING_AGG(pt.topping_name, ', ') AS exclusions
+
+  FROM (SELECT
+    co.row
+    ,UNNEST(STRING_TO_ARRAY(co.exclusions, ','))::INT AS exclusions
+
+    FROM customer_orders_clean AS co
+  ) AS uco
+  JOIN pizza_toppings AS pt ON uco.exclusions = pt.topping_id
+
+  GROUP BY uco.row
+
+  ORDER BY row
+)
+
+SELECT
+co.order_id AS "Order ID"
+,CONCAT(pn.pizza_name,
+        COALESCE(' - Exclude ' || excl.exclusions, ''),
+        COALESCE(' - Extra ' || extl.extras, '')
+) AS Pizza
+
+FROM customer_orders_clean AS co
+LEFT JOIN pizza_runner.pizza_names AS pn ON co.pizza_id = pn.pizza_id
+LEFT JOIN extras_list AS extl ON co.row = extl.row
+LEFT JOIN exclusions_list AS excl ON co.row = excl.row
+
+ORDER BY "Order ID"
 ```
 
 **Table Output:**
 
-| Name 1 | Name 2 |
-| ------ | ------ |
+| Order ID | Pizza                                                           |
+| -------- | --------------------------------------------------------------- |
+| 1        | Meatlovers                                                      |
+| 2        | Meatlovers                                                      |
+| 3        | Meatlovers                                                      |
+| 3        | Vegetarian                                                      |
+| 4        | Meatlovers - Exclude Cheese                                     |
+| 4        | Meatlovers - Exclude Cheese                                     |
+| 4        | Vegetarian - Exclude Cheese                                     |
+| 5        | Meatlovers - Extra Bacon                                        |
+| 6        | Vegetarian                                                      |
+| 7        | Vegetarian - Extra Bacon                                        |
+| 8        | Meatlovers                                                      |
+| 9        | Meatlovers - Exclude Cheese - Extra Bacon, Chicken              |
+| 10       | Meatlovers                                                      |
+| 10       | Meatlovers - Exclude BBQ Sauce, Mushrooms - Extra Bacon, Cheese |
 
 **Answer:**
-- (answer)
+- See table above.
 
 ### 5. Generate an alphabetically ordered comma separated ingredient list for each pizza order from the customer_orders table and add a 2x in front of any relevant ingredients
 ### For example: "Meat Lovers: 2xBacon, Beef, ... , Salami"
