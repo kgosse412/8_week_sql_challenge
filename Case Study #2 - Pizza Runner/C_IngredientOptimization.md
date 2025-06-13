@@ -387,27 +387,189 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| customer_orders_clean | Contains information on each customer order, including the type of pizza and any toppings excluded or added as extra |
+| exclusions_list | Contains the list of excluded toppings |
+| extras_list | Contains the list of extra toppings
+| pizza_recipes_unnested | Contains all the toppings in an alphabetical list |
 
 Expected Results:
-- (expected result) 
+| order_id | ingredients |
+| -------- | ----------- |
+| 1        | Bacon, BBQ Sauce, Beef, Cheese, Chicken, Mushrooms, Pepperoni, Salami |
+| 2        | Bacon, BBQ Sauce, Beef, Cheese, Chicken, Mushrooms, Pepperoni, Salami |
+| 3        | Bacon, BBQ Sauce, Beef, Cheese, Chicken, Mushrooms, Pepperoni, Salami |
+| 3        | Cheese, Mushrooms, Onions, Peppers, Tomatoes, Tomato Sauce |
+| 4        | Bacon, BBQ Sauce, Beef, Chicken, Mushrooms, Pepperoni, Salami |
+| 4        | Bacon, BBQ Sauce, Beef, Chicken, Mushrooms, Pepperoni, Salami |
+| 4        | Mushrooms, Onions, Peppers, Tomatoes, Tomato Sauce |
+| 5        | 2x Bacon, BBQ Sauce, Beef, Cheese, Chicken, Mushrooms, Pepperoni, Salami |
+| 6        | Cheese, Mushrooms, Onions, Peppers, Tomatoes, Tomato Sauce |
+| 7        | Bacon, Cheese, Mushrooms, Onions, Peppers, Tomatoes, Tomato Sauce |
+| 8        | Bacon, BBQ Sauce, Beef, Cheese, Chicken, Mushrooms, Pepperoni, Salami |
+| 9        | 2x Bacon, BBQ Sauce, Beef, 2x Chicken, Mushrooms, Pepperoni, Salami |
+| 10       | Bacon, BBQ Sauce, Beef, Cheese, Chicken, Mushrooms, Pepperoni, Salami |
+| 10       | 2x Bacon, Beef, 2x Cheese, Chicken, Pepperoni, Salami |
 
 I solved this by:
 
-1. 
+1. Using my cleaned up Common Table Expression (CTE) table called `customer_orders_clean` with a `ROW` calcuation.
+2. Using my CTE table called `pizza_recipes_unnested` from question 1.
+3. Creating a CTE called `exclusions_list`. This CTE has a subquery that unnests the comma separated list of `exclusions` from `customer_orders_clean` so each value has its own row. Then the subquery is joined to `pizza_toppings` to pull in the `topping_id` and `topping_name` so we know what each exclusion is in text form.
+4. Creating a CTE called `extras_list`. This CTE has a subquery that unnests the comma separated list of `extras` from `customer_orders_clean` so each value has its own row. Then the subquery is joined to `pizza_toppings` to pull in the `topping_id` and `topping_name` so we know what each extra is in text form.
+5. Creating a CTE called `ingredients_list_full` that creates an entire list of every ingredient used and excluded. The `UNION ALL` allows us to combine the extras to the original ingredients list so we can later use that to count the number of each ingredient per order.
+6. Creating a CTE called `ingredient_list_count` that does two major things - one, it removes any excluded ingredients from our list via `WHERE ilf.exclusion IS NULL` and two, it counts how many of each ingredient is used for each order via `COUNT(*)`. The query also groups the non-aggregate fields by using `GROUP BY`, and then sorts the output using an `ORDER BY`.
+7. Creating a final CTE called `ingredients_list_csv` that takes the counted list from `ingredient_list_count` and turns it into an alphabetical, comma separated list. The `CASE` statement decides whether a count should be in from of the `topping_name` or not.
+8. Creating a query that joins the `customer_orders_clean` table to the above `ingredients_list_csv` table on `row` so we can show each order's CSV list of ingredient toppings. The output is then sorted by `"Order ID"` using a `ORDER BY`.
 
 **SQL Statement:**
 	
 ```sql	
+WITH customer_orders_clean AS (SELECT
+	ROW_NUMBER() OVER() AS row
+    ,co.order_id
+	,co.customer_id
+	,co.pizza_id
+	,CASE
+		WHEN co.exclusions = 'null' OR co.exclusions = '' THEN NULL
+   	 	ELSE co.exclusions
+	END AS exclusions
+	,CASE
+		WHEN co.extras = 'null' OR co.extras = '' THEN NULL
+    	ELSE co.extras
+	END AS extras
+	,co.order_time
 
+	FROM pizza_runner.customer_orders AS co
+),
+pizza_recipes_unnested AS (SELECT
+upr.pizza_id
+,pn.pizza_name
+,upr.topping_id
+,pt.topping_name
+
+FROM (SELECT
+  pr.pizza_id
+  ,UNNEST(STRING_TO_ARRAY(pr.toppings, ','))::INT AS topping_id
+
+  FROM pizza_runner.pizza_recipes AS pr
+) AS upr -- unnested_pizza_recipes
+JOIN pizza_runner.pizza_toppings AS pt ON upr.topping_id = pt.topping_id
+JOIN pizza_runner.pizza_names AS pn ON upr.pizza_id = pn.pizza_id
+
+ORDER BY upr.pizza_id ASC, upr.topping_id ASC
+),
+exclusions_list AS (SELECT
+  uco.row
+  ,pt.topping_id
+  ,pt.topping_name AS exclusion
+
+  FROM (SELECT
+    co.row
+    ,UNNEST(STRING_TO_ARRAY(co.exclusions, ','))::INT AS exclusions
+
+    FROM customer_orders_clean AS co
+  ) AS uco
+  JOIN pizza_toppings AS pt ON uco.exclusions = pt.topping_id
+
+  ORDER BY row
+),
+extras_list AS (SELECT
+  uco.row
+  ,pt.topping_id
+  ,pt.topping_name AS extra
+
+  FROM (SELECT
+    co.row
+    ,UNNEST(STRING_TO_ARRAY(co.extras, ','))::INT AS extras
+
+    FROM customer_orders_clean AS co
+  ) AS uco
+  JOIN pizza_toppings AS pt ON uco.extras = pt.topping_id
+
+  ORDER BY row
+),
+ingredients_list_full AS (SELECT
+  co.row
+  ,pru.topping_id
+  ,pru.topping_name
+  ,excl.exclusion
+
+  FROM customer_orders_clean AS co
+  LEFT JOIN pizza_recipes_unnested AS pru ON co.pizza_id = pru.pizza_id
+  LEFT JOIN exclusions_list AS excl ON co.row = excl.row AND pru.topping_name = excl.exclusion
+
+  UNION ALL
+
+  SELECT
+  extl.row
+  ,extl.topping_id
+  ,extl.extra
+  ,NULL AS exclusion
+
+  FROM extras_list AS extl
+),
+ingredient_list_count AS (SELECT
+  ilf.row
+  ,ilf.topping_id
+  ,ilf.topping_name
+  ,COUNT(*) AS topping_count
+
+  FROM ingredients_list_full ilf
+
+  WHERE
+  ilf.exclusion IS NULL
+
+  GROUP BY ilf.row, ilf.topping_id, ilf.topping_name
+                          
+  ORDER BY ilf.row, ilf.topping_id
+),
+ingredients_list_csv AS (SELECT
+  ilc.row
+  ,STRING_AGG(
+      CASE
+          WHEN ilc.topping_count = 1 THEN ilc.topping_name
+          ELSE ilc.topping_count::TEXT || 'x ' || ilc.topping_name
+      END,
+      ', '
+      ORDER BY ilc.topping_name
+  ) AS ingredients_csv
+
+  FROM ingredient_list_count AS ilc
+
+  GROUP BY ilc.row
+)
+
+SELECT
+co.order_id AS "Order ID"
+,ilcsv.ingredients_csv AS "Ingredients"
+
+FROM customer_orders_clean AS co
+JOIN ingredients_list_csv AS ilcsv ON co.row = ilcsv.row
+
+ORDER BY "Order ID" ASC
 ```
 
 **Table Output:**
 
-| Name 1 | Name 2 |
-| ------ | ------ |
+| Order ID | Ingredients                                                              |
+| -------- | ------------------------------------------------------------------------ |
+| 1        | BBQ Sauce, Bacon, Beef, Cheese, Chicken, Mushrooms, Pepperoni, Salami    |
+| 2        | BBQ Sauce, Bacon, Beef, Cheese, Chicken, Mushrooms, Pepperoni, Salami    |
+| 3        | BBQ Sauce, Bacon, Beef, Cheese, Chicken, Mushrooms, Pepperoni, Salami    |
+| 3        | Cheese, Mushrooms, Onions, Peppers, Tomato Sauce, Tomatoes               |
+| 4        | BBQ Sauce, Bacon, Beef, Chicken, Mushrooms, Pepperoni, Salami            |
+| 4        | BBQ Sauce, Bacon, Beef, Chicken, Mushrooms, Pepperoni, Salami            |
+| 4        | Mushrooms, Onions, Peppers, Tomato Sauce, Tomatoes                       |
+| 5        | BBQ Sauce, 2x Bacon, Beef, Cheese, Chicken, Mushrooms, Pepperoni, Salami |
+| 6        | Cheese, Mushrooms, Onions, Peppers, Tomato Sauce, Tomatoes               |
+| 7        | Bacon, Cheese, Mushrooms, Onions, Peppers, Tomato Sauce, Tomatoes        |
+| 8        | BBQ Sauce, Bacon, Beef, Cheese, Chicken, Mushrooms, Pepperoni, Salami    |
+| 9        | BBQ Sauce, 2x Bacon, Beef, 2x Chicken, Mushrooms, Pepperoni, Salami      |
+| 10       | BBQ Sauce, Bacon, Beef, Cheese, Chicken, Mushrooms, Pepperoni, Salami    |
+| 10       | 2x Bacon, Beef, 2x Cheese, Chicken, Pepperoni, Salami                    |
 
 **Answer:**
-- (answer)
+- See table above.
 
 ### 6. What is the total quantity of each ingredient used in all delivered pizzas sorted by most frequent first?
 ________________________________________________________________________________________________________________
