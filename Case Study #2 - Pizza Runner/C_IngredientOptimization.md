@@ -393,6 +393,7 @@ Tables Used:
 | pizza_recipes_unnested | Contains all the toppings in an alphabetical list |
 
 Expected Results:
+
 | order_id | ingredients |
 | -------- | ----------- |
 | 1        | Bacon, BBQ Sauce, Beef, Cheese, Chicken, Mushrooms, Pepperoni, Salami |
@@ -579,24 +580,191 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| customer_orders_clean | Contains information on the pizza ordered, including any toppings that were excluded or added as extras |
+| runner_orders_clean | Contains information on what orders were delivered v cancelled |
+| pizza_recipes_unnested | Contains a row by row list of the ingredients |
+| exclusions_list | Contains a list of the excluded toppings |
+| extras_list | Contains a list of the extra toppings |
+| ingredients_list_full | Contains the full row by row list of the ingredients used per each order |
 
 Expected Results:
-- (expected result) 
+
+| topping_name | topping_count |
+| ------------ | ------------- |
+| Bacon        | 12            |
+| Mushrooms    | 11            |
+| Cheese       | 10            |
+| Chicken      | 9             |
+| Beef         | 9             |
+| Pepperoni    | 9             |
+| Salami       | 9             |
+| BBQ Sauce    | 8             |
+| Onions       | 3             |
+| Peppers      | 3             |
+| Tomato Sauce | 3             |
+| Tomatoes     | 3             |
 
 I solved this by:
 
-1. 
+1. Using my cleaned up Common Table Expression (CTE) table called `customer_orders_clean` with a `ROW` calcuation.
+2. Using my cleaned up CTE table called `runner_orders_clean`.
+2. Using my CTE `pizza_recipes_unnested` from question 5.
+3. Using my CTE `exclusions_list` from question 5.
+4. Using my CTE `extras_list` from question 5 with an added column called `order_id`.
+5. Using my CTE `ingredients_list_full` from question 5 with added columns called `order_id`.
+6. Creating a query that counts the `topping_id` by using `COUNT` after removing any excluded toppings using `WHERE ilf.exclusion IS NULL`. It also removes any pizzas that weren't delivered by joining the tabl `ingredients_list_full` to the table `runner_orders_clean` and using `WHERE ro.cancellation IS NULL`.  This is then grouped by the `"Topping Name"` using `GROUP BY`, and the output is sorted first by `"Topping ID Count"` in descending order (to get the most commonly used ingredient first) and then by `"Topping Name"` in ascending order to get anything with the same count in alphabetical order. 
 
 **SQL Statement:**
 	
 ```sql	
+WITH customer_orders_clean AS (SELECT
+	ROW_NUMBER() OVER() AS row
+    ,co.order_id
+	,co.customer_id
+	,co.pizza_id
+	,CASE
+		WHEN co.exclusions = 'null' OR co.exclusions = '' THEN NULL
+   	 	ELSE co.exclusions
+	END AS exclusions
+	,CASE
+		WHEN co.extras = 'null' OR co.extras = '' THEN NULL
+    	ELSE co.extras
+	END AS extras
+	,co.order_time
 
+	FROM pizza_runner.customer_orders AS co
+),
+runner_orders_clean AS (SELECT
+  ro.order_id
+  ,ro.runner_id
+  ,CASE
+      WHEN ro.pickup_time = 'null' OR ro.pickup_time = '' THEN NULL
+      ELSE ro.pickup_time::TIMESTAMP
+  END AS pickup_time
+  ,CASE
+      WHEN ro.distance = 'null' OR ro.distance = '' THEN NULL
+      WHEN ro.distance LIKE '%km' THEN TRIM('km' FROM ro.distance)::DECIMAL
+      ELSE ro.distance::DECIMAL
+  END AS distance
+  ,CASE
+      WHEN ro.duration = 'null' OR ro.duration = '' THEN NULL
+      WHEN ro.duration LIKE '%minutes' THEN TRIM('minutes' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%minute' THEN TRIM('minute' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%mins' THEN TRIM ('mins' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%min' THEN TRIM ('min' FROM ro.duration)::INT
+      ELSE ro.duration::INT
+  END AS duration
+  ,CASE
+      WHEN ro.cancellation = 'null' OR ro.cancellation = '' THEN NULL
+      ELSE ro.cancellation
+  END AS cancellation
+
+  FROM pizza_runner.runner_orders AS ro
+),
+pizza_recipes_unnested AS (SELECT
+upr.pizza_id
+,pn.pizza_name
+,upr.topping_id
+,pt.topping_name
+
+FROM (SELECT
+  pr.pizza_id
+  ,UNNEST(STRING_TO_ARRAY(pr.toppings, ','))::INT AS topping_id
+
+  FROM pizza_runner.pizza_recipes AS pr
+) AS upr -- unnested_pizza_recipes
+JOIN pizza_runner.pizza_toppings AS pt ON upr.topping_id = pt.topping_id
+JOIN pizza_runner.pizza_names AS pn ON upr.pizza_id = pn.pizza_id
+
+ORDER BY upr.pizza_id ASC, upr.topping_id ASC
+),
+exclusions_list AS (SELECT
+  uco.row
+  ,pt.topping_id
+  ,pt.topping_name AS exclusion
+
+  FROM (SELECT
+    co.row
+    ,UNNEST(STRING_TO_ARRAY(co.exclusions, ','))::INT AS exclusions
+
+    FROM customer_orders_clean AS co
+  ) AS uco
+  JOIN pizza_toppings AS pt ON uco.exclusions = pt.topping_id
+
+  ORDER BY row
+),
+extras_list AS (SELECT
+  uco.row
+  ,uco.order_id
+  ,pt.topping_id
+  ,pt.topping_name AS extra
+
+  FROM (SELECT
+    co.row
+    ,co.order_id
+    ,UNNEST(STRING_TO_ARRAY(co.extras, ','))::INT AS extras
+
+    FROM customer_orders_clean AS co
+  ) AS uco
+  JOIN pizza_toppings AS pt ON uco.extras = pt.topping_id
+
+  ORDER BY row
+),
+ingredients_list_full AS (SELECT
+  co.row
+  ,co.order_id
+  ,pru.topping_id
+  ,pru.topping_name
+  ,excl.exclusion
+
+  FROM customer_orders_clean AS co
+  LEFT JOIN pizza_recipes_unnested AS pru ON co.pizza_id = pru.pizza_id
+  LEFT JOIN exclusions_list AS excl ON co.row = excl.row AND pru.topping_name = excl.exclusion
+
+  UNION ALL
+
+  SELECT
+  extl.row
+  ,extl.order_id
+  ,extl.topping_id
+  ,extl.extra
+  ,NULL AS exclusion
+
+  FROM extras_list AS extl
+)
+
+SELECT
+ilf.topping_name "Topping Name"
+,COUNT(ilf.topping_id) AS "Topping ID Count"
+
+FROM ingredients_list_full AS ilf
+LEFT JOIN runner_orders_clean AS ro ON ilf.order_id = ro.order_id
+
+WHERE
+ilf.exclusion IS NULL AND
+ro.cancellation IS NULL
+
+GROUP BY "Topping Name"
+
+ORDER BY "Topping ID Count" DESC, "Topping Name" ASC
 ```
 
 **Table Output:**
 
-| Name 1 | Name 2 |
-| ------ | ------ |
+| Topping Name | Topping ID Count |
+| ------------ | ---------------- |
+| Bacon        | 12               |
+| Mushrooms    | 11               |
+| Cheese       | 10               |
+| Beef         | 9                |
+| Chicken      | 9                |
+| Pepperoni    | 9                |
+| Salami       | 9                |
+| BBQ Sauce    | 8                |
+| Onions       | 3                |
+| Peppers      | 3                |
+| Tomato Sauce | 3                |
+| Tomatoes     | 3                |
 
 **Answer:**
-- (answer)
+- See above table.
