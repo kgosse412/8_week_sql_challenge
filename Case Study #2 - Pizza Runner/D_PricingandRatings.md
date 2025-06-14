@@ -435,24 +435,96 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| customer_orders_clean | Contains information on the pizzas ordered |
+| runner_orders_clean | Contains information on the distance each runner traveled |
 
 Expected Results:
-- (expected result) 
+- Pizza Runner has $94.44 left after deliveries.
 
 I solved this by:
 
-1. 
+1. Using my cleaned up Common Table Expression (CTE) table called `customer_orders_clean`.
+2. Using my cleaned up Common Table Expression (CTE) table called `runner_orders_clean`.
+3. Using the query from question 1 to figure out the total pizza earnings.
+4. Creating a new query that calculates the total amount paid to the runners via `SUM(ro.distance) * .30`.
+5. Subtracting the query from step 4 from the query from step 3.
 
 **SQL Statement:**
 	
 ```sql	
+WITH customer_orders_clean AS (SELECT
+	ROW_NUMBER() OVER() AS row
+    ,co.order_id
+	,co.customer_id
+	,co.pizza_id
+	,CASE
+		WHEN co.exclusions = 'null' OR co.exclusions = '' THEN NULL
+   	 	ELSE co.exclusions
+	END AS exclusions
+	,CASE
+		WHEN co.extras = 'null' OR co.extras = '' THEN NULL
+    	ELSE co.extras
+	END AS extras
+	,co.order_time
 
+	FROM pizza_runner.customer_orders AS co
+),
+runner_orders_clean AS (SELECT
+  ro.order_id
+  ,ro.runner_id
+  ,CASE
+      WHEN ro.pickup_time = 'null' OR ro.pickup_time = '' THEN NULL
+      ELSE ro.pickup_time::TIMESTAMP
+  END AS pickup_time
+  ,CASE
+      WHEN ro.distance = 'null' OR ro.distance = '' THEN NULL
+      WHEN ro.distance LIKE '%km' THEN TRIM('km' FROM ro.distance)::DECIMAL
+      ELSE ro.distance::DECIMAL
+  END AS distance
+  ,CASE
+      WHEN ro.duration = 'null' OR ro.duration = '' THEN NULL
+      WHEN ro.duration LIKE '%minutes' THEN TRIM('minutes' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%minute' THEN TRIM('minute' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%mins' THEN TRIM ('mins' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%min' THEN TRIM ('min' FROM ro.duration)::INT
+      ELSE ro.duration::INT
+  END AS duration
+  ,CASE
+      WHEN ro.cancellation = 'null' OR ro.cancellation = '' THEN NULL
+      ELSE ro.cancellation
+  END AS cancellation
+
+  FROM pizza_runner.runner_orders AS ro
+)
+
+SELECT
+(
+  SELECT
+  SUM(CASE
+      WHEN co.pizza_id = 1 THEN 12
+      WHEN co.pizza_id = 2 THEN 10
+      ELSE 0
+  END) AS "Total Pizza Earnings"
+
+  FROM customer_orders_clean AS co
+  LEFT JOIN runner_orders_clean AS ro ON co.order_id = ro.order_id
+
+  WHERE
+  ro.cancellation IS NULL
+) -
+(
+  SELECT
+  SUM(ro.distance) * .30 AS "Amount Paid to Runners"
+
+  FROM runner_orders_clean AS ro
+) AS "Pizza Earnings"
 ```
 
 **Table Output:**
 
-| Name 1 | Name 2 |
-| ------ | ------ |
+| Pizza Earnings |
+| -------------- |
+| 94.440         |
 
 **Answer:**
-- (answer)
+- Pizza Runner has $94.44 left over after paying the runners.
