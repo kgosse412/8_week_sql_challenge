@@ -268,44 +268,164 @@ FROM runner_ratings
 - See table above.
 
 ### 4. Using your newly generated table - can you join all of the information together to form a table which has the following information for successful deliveries?
-### customer_id
-### order_id
-### runner_id
-### rating
-### order_time
-### pickup_time
-### Time between order and pickup
-### Delivery duration
-### Average speed
-### Total number of pizzas
 ________________________________________________________________________________________________________________________
+**Format**
+
+- customer_id
+- order_id
+- runner_id
+- rating
+- order_time
+- pickup_time
+- Time between order and pickup
+- Delivery duration
+- Average speed
+- Total number of pizzas
+
 **Overview:**
 
 Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| customer_orders_clean | Contains the customer_id, order_id, and order_time |
+| runner_orders_clean | Contains the runner_id, order_id, and pickup_time    |
+| runner_ratings | Contains the order_id, runner_id, and rating |
 
 Expected Results:
-- (expected result) 
+
+| customer_id | order_id | runner_id | rating | order_time          | pickup_time         | Time Between Order and Pickup | duration | Average Speed | Total Number of Pizzas |
+| ----------- | -------- | --------- | ------ | ------------------- | ------------------- | ----------------------------- | -------- | ------------- | ---------------------- |
+| 101         | 1        | 1         | 4      | 2020-01-01 18:05:02 | 2020-01-01 18:15:34 | 11                            | 32       | 37.5          | 1                      |
+| 101         | 2        | 1         | 5      | 2020-01-01 19:00:52 | 2020-01-01 19:10:54 | 10                            | 27       | 44.4          | 1                      |
+| 102         | 3        | 1         | 5      | 2020-01-02 23:51:23 | 2020-01-03 00:12:37 | 21                            | 20       | 40.2          | 2                      |
+| 103         | 4        | 2         | 2      | 2020-01-04 13:23:46 | 2020-01-04 13:53:03 | 29                            | 40       | 35.1          | 3                      |
+| 104         | 5        | 3         | 5      | 2020-01-08 21:00:29 | 2020-01-08 21:10:57 | 10                            | 15       | 40.0          | 1                      |
+| 105         | 7        | 2         | 5      | 2020-01-08 21:20:29 | 2020-01-08 21:30:45 | 10                            | 25       | 60.0          | 1                      |
+| 102         | 8        | 2         | 5      | 2020-01-09 23:54:33 | 2020-01-10 00:15:02 | 20                            | 15       | 93.6          | 1                      |
+| 104         | 10       | 1         | 3      | 2020-01-11 18:34:49 | 2020-01-11 18:50:20 | 16                            | 10       | 60.0          | 2                      |
 
 I solved this by:
 
-1. 
+1. Using the commands from question 3 to create the `runner_ratings` table.
+2. Using my cleaned up Common Table Expression (CTE) table called `customer_orders_clean`.
+3. Using my cleaned up Common Table Expression (CTE) table called `runner_orders_clean`.
+4. Taking the seconds from `pickup_time - order_time` and dividing by 60 to get it into minutes before rounding up to get the `Time Between Order and Pickup`.
+5. Figuring out the `Average Speed` by using taking the `distance / duration * 60` and rounding to 1 decmial digit using `ROUND`.
+6. Counting the number of pizzas by using `COUNT`.
+7. Joining the `runner_orders_table` and the `runner_ratings` tables to `customer_orders_clean`.
+8. Specifying we only want successful deliveries by using `WHERE ro.cancellation IS NULL`.
+9. Grouping the appropriate columns by using `GROUP BY`.
+10. Sorting the output by `order_id` using `ORDER BY`.
 
 **SQL Statement:**
 	
 ```sql	
+DROP TABLE IF EXISTS runner_ratings;
 
+CREATE TABLE runner_ratings (
+  "order_id" INTEGER NOT NULL,
+  "runner_id" INTEGER NOT NULL,
+  "rating" INTEGER NOT NULL,
+  "review" TEXT
+);
+
+INSERT INTO runner_ratings
+	("order_id","runner_id","rating","review")
+VALUES
+	(1, 1, 4, 'Pizza was fresh but runner almost delivered to wrong address.'),
+    (2, 1, 5, 'Fast delivery, fresh pizza!'),
+    (3, 1, 5, 'Couldn''t have gotten here any faster!'),
+    (4, 2, 2, 'Runner took a long time. Pizza was cold.'),
+    (5, 3, 5, 'I''d rate higher if I could! Super fast delivery!'),
+    (7, 2, 5, NULL),
+    (8, 2, 5, 'Fastest delivery I''ve every had for any pizza ever!'),
+    (10, 1, 3,'Delivery was fast but runner delivered to neighbor''s house.');
+
+WITH customer_orders_clean AS (SELECT
+	ROW_NUMBER() OVER() AS row
+    ,co.order_id
+	,co.customer_id
+	,co.pizza_id
+	,CASE
+		WHEN co.exclusions = 'null' OR co.exclusions = '' THEN NULL
+   	 	ELSE co.exclusions
+	END AS exclusions
+	,CASE
+		WHEN co.extras = 'null' OR co.extras = '' THEN NULL
+    	ELSE co.extras
+	END AS extras
+	,co.order_time
+
+	FROM pizza_runner.customer_orders AS co
+),
+runner_orders_clean AS (SELECT
+  ro.order_id
+  ,ro.runner_id
+  ,CASE
+      WHEN ro.pickup_time = 'null' OR ro.pickup_time = '' THEN NULL
+      ELSE ro.pickup_time::TIMESTAMP
+  END AS pickup_time
+  ,CASE
+      WHEN ro.distance = 'null' OR ro.distance = '' THEN NULL
+      WHEN ro.distance LIKE '%km' THEN TRIM('km' FROM ro.distance)::DECIMAL
+      ELSE ro.distance::DECIMAL
+  END AS distance
+  ,CASE
+      WHEN ro.duration = 'null' OR ro.duration = '' THEN NULL
+      WHEN ro.duration LIKE '%minutes' THEN TRIM('minutes' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%minute' THEN TRIM('minute' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%mins' THEN TRIM ('mins' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%min' THEN TRIM ('min' FROM ro.duration)::INT
+      ELSE ro.duration::INT
+  END AS duration
+  ,CASE
+      WHEN ro.cancellation = 'null' OR ro.cancellation = '' THEN NULL
+      ELSE ro.cancellation
+  END AS cancellation
+
+  FROM pizza_runner.runner_orders AS ro
+)
+
+SELECT
+co.customer_id
+,co.order_id
+,ro.runner_id
+,rr.rating
+,co.order_time
+,ro.pickup_time
+,ROUND(EXTRACT(EPOCH FROM ro.pickup_time - co.order_time)/60) AS "Time Between Order and Pickup"
+,ro.duration
+,ROUND((ro.distance / ro.duration) * 60, 1) AS "Average Speed"
+,COUNT(*) AS "Total Number of Pizzas"
+
+FROM customer_orders_clean AS co
+LEFT JOIN runner_orders_clean AS ro ON co.order_id = ro.order_id
+LEFT JOIN runner_ratings AS rr ON co.order_id = rr.order_id
+
+WHERE
+ro.cancellation IS NULL
+
+GROUP BY co.customer_id, co.order_id, ro.runner_id, rr.rating, co.order_time, ro.pickup_time, ro.duration, ro.distance
+
+ORDER BY co.order_id ASC
 ```
 
 **Table Output:**
 
-| Name 1 | Name 2 |
-| ------ | ------ |
+| customer_id | order_id | runner_id | rating | order_time          | pickup_time         | Time Between Order and Pickup | duration | Average Speed | Total Number of Pizzas |
+| ----------- | -------- | --------- | ------ | ------------------- | ------------------- | ----------------------------- | -------- | ------------- | ---------------------- |
+| 101         | 1        | 1         | 4      | 2020-01-01 18:05:02 | 2020-01-01 18:15:34 | 11                            | 32       | 37.5          | 1                      |
+| 101         | 2        | 1         | 5      | 2020-01-01 19:00:52 | 2020-01-01 19:10:54 | 10                            | 27       | 44.4          | 1                      |
+| 102         | 3        | 1         | 5      | 2020-01-02 23:51:23 | 2020-01-03 00:12:37 | 21                            | 20       | 40.2          | 2                      |
+| 103         | 4        | 2         | 2      | 2020-01-04 13:23:46 | 2020-01-04 13:53:03 | 29                            | 40       | 35.1          | 3                      |
+| 104         | 5        | 3         | 5      | 2020-01-08 21:00:29 | 2020-01-08 21:10:57 | 10                            | 15       | 40.0          | 1                      |
+| 105         | 7        | 2         | 5      | 2020-01-08 21:20:29 | 2020-01-08 21:30:45 | 10                            | 25       | 60.0          | 1                      |
+| 102         | 8        | 2         | 5      | 2020-01-09 23:54:33 | 2020-01-10 00:15:02 | 20                            | 15       | 93.6          | 1                      |
+| 104         | 10       | 1         | 3      | 2020-01-11 18:34:49 | 2020-01-11 18:50:20 | 16                            | 10       | 60.0          | 2                      |
 
 **Answer:**
-- (answer)
+- See table above.
 
 ### 5. If a Meat Lovers pizza was $12 and Vegetarian $10 fixed prices with no cost for extras and each runner is paid $0.30 per kilometre traveled - how much money does Pizza Runner have left over after these deliveries?
 ________________________________________________________________________________________________________________________
