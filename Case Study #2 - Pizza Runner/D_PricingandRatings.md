@@ -210,27 +210,62 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| NONE  | Creating a table, not using an existing one |
 
 Expected Results:
-- (expected result) 
+- N\A
 
 I solved this by:
 
-1. 
+1. Using `DROP TABLE IF EXISTS runner_ratings;` to remove any table called `runner_ratings` from the schema _if_ it exists in the schema.
+2. Using `CREATE TABLE` to create a table called `runner_ratings`. This table has 4 columns - `order_id`, `runner_id`, `rating`, and `review`.
+3. Adding data to the newly created table by using `INSERT INTO`.
+4. Pulling all data from the newly created table.
 
 **SQL Statement:**
 	
 ```sql	
+DROP TABLE IF EXISTS runner_ratings;
 
+CREATE TABLE runner_ratings (
+  "order_id" INTEGER NOT NULL,
+  "runner_id" INTEGER NOT NULL,
+  "rating" INTEGER NOT NULL,
+  "review" TEXT
+);
+
+INSERT INTO runner_ratings
+	("order_id","runner_id","rating","review")
+VALUES
+	(1, 1, 4, 'Pizza was fresh but runner almost delivered to wrong address.'),
+    (2, 1, 5, 'Fast delivery, fresh pizza!'),
+    (3, 1, 5, 'Couldn''t have gotten here any faster!'),
+    (4, 2, 2, 'Runner took a long time. Pizza was cold.'),
+    (5, 3, 5, 'I''d rate higher if I could! Super fast delivery!'),
+    (7, 2, 5, NULL),
+    (8, 2, 5, 'Fastest delivery I''ve every had for any pizza ever!'),
+    (10, 1, 3,'Delivery was fast but runner delivered to neighbor''s house.');
+
+SELECT *
+
+FROM runner_ratings
 ```
 
 **Table Output:**
 
-| Name 1 | Name 2 |
-| ------ | ------ |
+| order_id | runner_id | rating | review                                                        |
+| -------- | --------- | ------ | ------------------------------------------------------------- |
+| 1        | 1         | 4      | Pizza was fresh but runner almost delivered to wrong address. |
+| 2        | 1         | 5      | Fast delivery, fresh pizza!                                   |
+| 3        | 1         | 5      | Couldn't have gotten here any faster!                         |
+| 4        | 2         | 2      | Runner took a long time. Pizza was cold.                      |
+| 5        | 3         | 5      | I'd rate higher if I could! Super fast delivery!              |
+| 7        | 2         | 5      |                                                               |
+| 8        | 2         | 5      | Fastest delivery I've every had for any pizza ever!           |
+| 10       | 1         | 3      | Delivery was fast but runner delivered to neighbor's house.   |
 
 **Answer:**
-- (answer)
+- See table above.
 
 ### 4. Using your newly generated table - can you join all of the information together to form a table which has the following information for successful deliveries?
 ### customer_id
