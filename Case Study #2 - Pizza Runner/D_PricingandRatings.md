@@ -6,27 +6,89 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| customer_orders_clean | Contains information on what pizza was ordered |
+| runner_orders_clean | Contains information on which pizzas were delivered vs cancelled |
 
 Expected Results:
-- (expected result) 
+- Pizza Runner has made $138 if you just look at delivered pizzas. 
 
 I solved this by:
 
-1. 
+1. Using my cleaned up Common Table Expression (CTE) table called `customer_orders_clean`.
+2. Using my cleaned up Common Table Expression (CTE) table called `runner_orders_clean`.
+3. Using a `CASE` statement to decided when a pizza is $12 or $10, then adding up the values using `SUM`.
+4. Joining the `customer_orders_clean` table to the `runner_orders_clean` table so I can use `WHERE ro.cancellation IS NULL` to prevent pulling in any pizza orders that were cancelled.
 
 **SQL Statement:**
 	
 ```sql	
+WITH customer_orders_clean AS (SELECT
+	ROW_NUMBER() OVER() AS row
+    ,co.order_id
+	,co.customer_id
+	,co.pizza_id
+	,CASE
+		WHEN co.exclusions = 'null' OR co.exclusions = '' THEN NULL
+   	 	ELSE co.exclusions
+	END AS exclusions
+	,CASE
+		WHEN co.extras = 'null' OR co.extras = '' THEN NULL
+    	ELSE co.extras
+	END AS extras
+	,co.order_time
 
+	FROM pizza_runner.customer_orders AS co
+),
+runner_orders_clean AS (SELECT
+  ro.order_id
+  ,ro.runner_id
+  ,CASE
+      WHEN ro.pickup_time = 'null' OR ro.pickup_time = '' THEN NULL
+      ELSE ro.pickup_time::TIMESTAMP
+  END AS pickup_time
+  ,CASE
+      WHEN ro.distance = 'null' OR ro.distance = '' THEN NULL
+      WHEN ro.distance LIKE '%km' THEN TRIM('km' FROM ro.distance)::DECIMAL
+      ELSE ro.distance::DECIMAL
+  END AS distance
+  ,CASE
+      WHEN ro.duration = 'null' OR ro.duration = '' THEN NULL
+      WHEN ro.duration LIKE '%minutes' THEN TRIM('minutes' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%minute' THEN TRIM('minute' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%mins' THEN TRIM ('mins' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%min' THEN TRIM ('min' FROM ro.duration)::INT
+      ELSE ro.duration::INT
+  END AS duration
+  ,CASE
+      WHEN ro.cancellation = 'null' OR ro.cancellation = '' THEN NULL
+      ELSE ro.cancellation
+  END AS cancellation
+
+  FROM pizza_runner.runner_orders AS ro
+)
+
+SELECT
+SUM(CASE
+	WHEN co.pizza_id = 1 THEN 12
+    WHEN co.pizza_id = 2 THEN 10
+    ELSE 0
+END) AS "Total Pizza Earnings"
+
+FROM customer_orders_clean AS co
+LEFT JOIN runner_orders_clean AS ro ON co.order_id = ro.order_id
+
+WHERE
+ro.cancellation IS NULL
 ```
 
 **Table Output:**
 
-| Name 1 | Name 2 |
-| ------ | ------ |
+| Total Pizza Earnings |
+| -------------------- |
+| 138                  |
 
 **Answer:**
-- (answer)
+- Danny's Pizza Runner has made $138 so far.
 
 ### 2. What if there was an additional $1 charge for any pizza extras?
 ### Add cheese is $1 extra
