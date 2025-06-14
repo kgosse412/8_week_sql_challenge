@@ -91,7 +91,7 @@ ro.cancellation IS NULL
 - Danny's Pizza Runner has made $138 so far.
 
 ### 2. What if there was an additional $1 charge for any pizza extras?
-### Add cheese is $1 extra
+### Ex. Add cheese is $1 extra
 ________________________________________________________________________________________________________________________
 **Overview:**
 
@@ -99,27 +99,108 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| customer_orders_clean | Contains information on what pizza was ordered |
+| runner_orders_clean | Contains information on which pizzas were delivered vs cancelled |
 
 Expected Results:
-- (expected result) 
+- Pizza Runner has made $142 if you add an additional $1 charge for any pizza extras.
 
 I solved this by:
 
-1. 
+1. Using my cleaned up Common Table Expression (CTE) table called `customer_orders_clean`.
+2. Using my cleaned up Common Table Expression (CTE) table called `runner_orders_clean`.
+3. Creating a CTE called `extras_list` that counts the unnested toppings from the `extras` column of the `customer_orders_clean` table by using `COUNT`.
+4. Taking the query from the previous question and adding `+ SUM(extl.extras_count)` after the `SUM(CASE... END)` statement. This adds up the count of the extra ingredients from the CTE `extras_list`, and then adds that to the number from `SUM(CASE... END)`.
+5. Joining another table to `customer_orders_clean` called `extras_list`. This is how the `extras_count` field is pulled in.
 
 **SQL Statement:**
 	
 ```sql	
+WITH customer_orders_clean AS (SELECT
+	ROW_NUMBER() OVER() AS row
+    ,co.order_id
+	,co.customer_id
+	,co.pizza_id
+	,CASE
+		WHEN co.exclusions = 'null' OR co.exclusions = '' THEN NULL
+   	 	ELSE co.exclusions
+	END AS exclusions
+	,CASE
+		WHEN co.extras = 'null' OR co.extras = '' THEN NULL
+    	ELSE co.extras
+	END AS extras
+	,co.order_time
 
+	FROM pizza_runner.customer_orders AS co
+),
+runner_orders_clean AS (SELECT
+  ro.order_id
+  ,ro.runner_id
+  ,CASE
+      WHEN ro.pickup_time = 'null' OR ro.pickup_time = '' THEN NULL
+      ELSE ro.pickup_time::TIMESTAMP
+  END AS pickup_time
+  ,CASE
+      WHEN ro.distance = 'null' OR ro.distance = '' THEN NULL
+      WHEN ro.distance LIKE '%km' THEN TRIM('km' FROM ro.distance)::DECIMAL
+      ELSE ro.distance::DECIMAL
+  END AS distance
+  ,CASE
+      WHEN ro.duration = 'null' OR ro.duration = '' THEN NULL
+      WHEN ro.duration LIKE '%minutes' THEN TRIM('minutes' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%minute' THEN TRIM('minute' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%mins' THEN TRIM ('mins' FROM ro.duration)::INT
+      WHEN ro.duration LIKE '%min' THEN TRIM ('min' FROM ro.duration)::INT
+      ELSE ro.duration::INT
+  END AS duration
+  ,CASE
+      WHEN ro.cancellation = 'null' OR ro.cancellation = '' THEN NULL
+      ELSE ro.cancellation
+  END AS cancellation
+
+  FROM pizza_runner.runner_orders AS ro
+),
+extras_list AS (SELECT
+  uco.row
+  ,COUNT(uco.extras) AS extras_count
+
+  FROM (SELECT
+    co.row
+    ,UNNEST(STRING_TO_ARRAY(co.extras, ','))::INT AS extras
+
+    FROM customer_orders_clean AS co
+  ) AS uco
+  JOIN pizza_toppings AS pt ON uco.extras = pt.topping_id
+  
+  GROUP BY uco.row
+                
+  ORDER BY row
+)
+
+SELECT
+SUM(CASE
+	WHEN co.pizza_id = 1 THEN 12
+    WHEN co.pizza_id = 2 THEN 10
+    ELSE 0
+END) +
+SUM(extl.extras_count) AS "Total Pizza Earnings"
+
+FROM customer_orders_clean AS co
+LEFT JOIN runner_orders_clean AS ro ON co.order_id = ro.order_id
+LEFT JOIN extras_list AS extl ON co.row = extl.row
+
+WHERE
+ro.cancellation IS NULL
 ```
 
 **Table Output:**
 
-| Name 1 | Name 2 |
-| ------ | ------ |
+| Total Pizza Earnings |
+| -------------------- |
+| 142                  |
 
 **Answer:**
-- (answer)
+- Danny's Pizza Runner has made $142.
 
 3. The Pizza Runner team now wants to add an additional ratings system that allows customers to rate their runner, how would you design an additional table for this new dataset - generate a schema for this new table and insert your own data for ratings for each successful customer order between 1 to 5.
 ________________________________________________________________________________________________________________________
