@@ -235,27 +235,84 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
-
-Expected Results:
-
-- 
-
-I solved this by:
-
-1. 
+| customer_info_plans | Contains information on the customer and each plan they have |
 
 **SQL Statement:**
 	
 ```sql	
+WITH customer_info_plans AS (SELECT
+  s.customer_id
+  ,s.plan_id
+  ,p.plan_name
+  ,p.price
+  ,s.start_date
 
+  FROM foodie_fi.subscriptions AS s
+  LEFT JOIN foodie_fi.plans AS p ON s.plan_id = p.plan_id
+                             
+  ORDER BY s.customer_id, s.start_date
+),
+cip_sorted AS (SELECT
+  /* Use the ROW_NUMBER window function to label each row grouped by customer_id
+  and sorted by start_date. This will allow us to look if row 1 is a trial and row
+  2 is churn. */
+  ROW_NUMBER() OVER(PARTITION BY cip.customer_id ORDER BY cip.start_date) AS row
+  ,*
+
+  FROM customer_info_plans AS cip
+
+  ORDER BY cip.customer_id ASC, row ASC -- Sort by the customer_id first, then row
+)
+
+SELECT
+/* Add up all the 1's from our CASE statement to get the number
+of plans that churned after the trial. */ 
+SUM(
+  /* When we're looking at row = 2 and the plan_name is churn,
+  then we want a 1. Otherwise we want 0. This will allow us to
+  use SUM to essentially count all the plans that churned after
+  the trial. See explanation on what row is above to understand
+  why we use row = 2 here. */
+  CASE
+	WHEN cips.row = 2 AND cips.plan_name = 'churn' THEN 1
+    ELSE 0
+  END
+) AS "Total Cancellations After Trial"
+/* To get the percentage, we want to take the count of plans churned after the
+trial plan (see explanation of the CASE statement above), divide by the total
+number of customers (gotten via the subquery), and multiple that by 100. Then
+we round to the nearest whole number using ROUND. */
+,ROUND(
+  SUM(100 * CASE
+	WHEN cips.row = 2 AND cips.plan_name = 'churn' THEN 1
+    ELSE 0
+  END) /
+  /* This subquery returns the unique number of customers (which we know is 1000).
+  We use it so we can get the full number of customers without being impacted
+  by the outter query's WHERE clause. */
+  (SELECT
+   COUNT(DISTINCT s.customer_id)
+   FROM foodie_fi.subscriptions AS s)
+) AS "Percentage of Cancellations After Trial"
+
+FROM cip_sorted AS cips
+
+/* We only want to look at the rows where the first plan is the trial and
+the plan after is churn. */
+WHERE
+(cips.row = 1 AND cips.plan_name = 'trial') OR
+(cips.row = 2 AND cips.plan_name = 'churn')
 ```
 
 **Table Output:**
 
+| Total Cancellations After Trial | Percentage of Cancellations After Trial |
+| ------------------------------- | --------------------------------------- |
+| 92                              | 9                                       |
 
 **Answer:**
 
-- 
+- 92 customers, or 9% of customers, cancelled their subscription after the trial period.
 
 ### 6. What is the number and percentage of customer plans after their initial free trial?
 ___________________________________________________________________________________________________________________________
