@@ -197,9 +197,13 @@ WITH customer_info_plans AS (SELECT
 
 SELECT
 COUNT(cip.plan_name) AS "Churn Count" -- The number of churn plans
-/* To get the percentage, we want to take the count of churn plans, divide by the total number of customers (gotten via the subquery), and multiply that by 100. Then we round the result to 1 decimal place. */
+/* To get the percentage, we want to take the count of churn plans, 
+divide by the total number of customers (gotten via the subquery), 
+and multiply that by 100. Then we round the result to 1 decimal place. */
 ,ROUND(100.0 * COUNT(cip.plan_name) /
-     /* This subquery returns the unique number of customers (which we know is 1000). We use it so we can get the full number of customers without being impacted by the outter query's WHERE clause. */
+	 /* This subquery returns the unique number of customers (which we know is 1000).
+       We use it so we can get the full number of customers without being impacted
+       by the outter query's WHERE clause. */
      (SELECT
      COUNT(DISTINCT s.customer_id)
      
