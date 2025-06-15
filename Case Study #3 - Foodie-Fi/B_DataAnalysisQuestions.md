@@ -34,15 +34,11 @@ Tables Used:
 | ----- | --- |
 | subscriptions | Contains all the customers Foodie-Fi has had |
 
-I solved this by:
-
-1. Using `COUNT(DISTINCT s.customer_id)` to get a unique count of the number of customers. 
-
 **SQL Statement:**
 	
 ```sql	
 SELECT
-COUNT(DISTINCT s.customer_id) AS "Unique Customers"
+COUNT(DISTINCT s.customer_id) AS "Unique Customers" -- Count the unique number of customers
 
 FROM foodie_fi.subscriptions AS s
 ```
