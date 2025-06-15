@@ -65,27 +65,59 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
-
-Expected Results:
-
-- 
-
-I solved this by:
-
-1. 
+| customer_info_plans | Contains information on the customers, the start_date of each plan, and what plan the customer has on that date | 
 
 **SQL Statement:**
 	
 ```sql	
+WITH customer_info_plans AS (SELECT
+  s.customer_id
+  ,s.plan_id
+  ,p.plan_name
+  ,p.price
+  ,s.start_date
 
+  FROM foodie_fi.subscriptions AS s
+  LEFT JOIN foodie_fi.plans AS p ON s.plan_id = p.plan_id
+                             
+  ORDER BY s.customer_id, s.start_date
+)
+
+SELECT
+EXTRACT(MONTH FROM cip.start_date) AS "Month Num" -- Get the month number
+,TO_CHAR(cip.start_date, 'Month') AS "Month" -- Get the name of the month
+,COUNT(cip.customer_id) AS "Plan Count" -- Count of customers (NOTE: DISTINCT isn't needed here because of our WHERE clause)
+
+FROM customer_info_plans AS cip
+
+WHERE
+cip.plan_name = 'trial' -- Only look at trial plans
+
+GROUP BY "Month Num", "Month" -- Need to group by these two since we're using the agg. function COUNT
+
+ORDER BY "Month Num" ASC -- Sort the months from 1 -> 12
 ```
 
 **Table Output:**
 
+| Month Num | Month     | Plan Count |
+| --------- | --------- | ---------- |
+| 1         | January   | 88         |
+| 2         | February  | 68         |
+| 3         | March     | 94         |
+| 4         | April     | 81         |
+| 5         | May       | 88         |
+| 6         | June      | 79         |
+| 7         | July      | 89         |
+| 8         | August    | 88         |
+| 9         | September | 87         |
+| 10        | October   | 79         |
+| 11        | November  | 75         |
+| 12        | December  | 84         |
 
 **Answer:**
 
-- 
+- See table above.
 
 ### 3. What plan start_date values occur after the year 2020 for our dataset? Show the breakdown by count of events for each plan_name.
 ___________________________________________________________________________________________________________________________
