@@ -32,27 +32,30 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
-
-Expected Results:
-
-- 
+| subscriptions | Contains all the customers Foodie-Fi has had |
 
 I solved this by:
 
-1. 
+1. Using `COUNT(DISTINCT s.customer_id)` to get a unique count of the number of customers. 
 
 **SQL Statement:**
 	
 ```sql	
+SELECT
+COUNT(DISTINCT s.customer_id) AS "Unique Customers"
 
+FROM foodie_fi.subscriptions AS s
 ```
 
 **Table Output:**
 
+| Unique Customers |
+| ---------------- |
+| 1000             |
 
 **Answer:**
 
-- 
+- Foodie-Fi has had 1000 customers.
 
 ### 2. What is the monthly distribution of trial plan start_date values for our dataset - use the start of the month as the group by value.
 ___________________________________________________________________________________________________________________________
