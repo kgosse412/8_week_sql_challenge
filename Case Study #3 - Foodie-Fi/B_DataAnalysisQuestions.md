@@ -123,27 +123,51 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
-
-Expected Results:
-
-- 
-
-I solved this by:
-
-1. 
+| customer_info_plans | Contains information on the plan and plan start_date |
 
 **SQL Statement:**
 	
 ```sql	
+WITH customer_info_plans AS (SELECT
+  s.customer_id
+  ,s.plan_id
+  ,p.plan_name
+  ,p.price
+  ,s.start_date
 
+  FROM foodie_fi.subscriptions AS s
+  LEFT JOIN foodie_fi.plans AS p ON s.plan_id = p.plan_id
+                             
+  ORDER BY s.customer_id, s.start_date
+)
+
+SELECT
+cip.plan_id AS "Plan ID"
+,cip.plan_name AS "Plan Name"
+,COUNT(cip.plan_name) AS "Plan Count" -- Count the number of plans
+
+FROM customer_info_plans AS cip
+
+WHERE
+EXTRACT(YEAR FROM cip.start_date) > 2020 -- Only look at data after the year 2020
+
+GROUP BY "Plan ID", "Plan Name" -- Need to group by Plan ID and Plan Name since we're using the agg. function COUNT
+
+ORDER BY "Plan ID" -- Sort the output by Plan ID
 ```
 
 **Table Output:**
 
+| Plan ID | Plan Name     | Plan Count |
+| ------- | ------------- | ---------- |
+| 1       | basic monthly | 8          |
+| 2       | pro monthly   | 60         |
+| 3       | pro annual    | 63         |
+| 4       | churn         | 71         |
 
 **Answer:**
 
-- 
+- After 2020, there wer 8 basic monthly plans, 60 pro monthly plans, 63 pro annual plans, and 71 cancellations.
 
 ### 4. What is the customer count and percentage of customers who have churned rounded to 1 decimal place?
 ___________________________________________________________________________________________________________________________
@@ -153,27 +177,51 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
-
-Expected Results:
-
-- 
-
-I solved this by:
-
-1. 
+| customer_info_plans | Contains information on the customers and their plans |
 
 **SQL Statement:**
 	
 ```sql	
+WITH customer_info_plans AS (SELECT
+  s.customer_id
+  ,s.plan_id
+  ,p.plan_name
+  ,p.price
+  ,s.start_date
 
+  FROM foodie_fi.subscriptions AS s
+  LEFT JOIN foodie_fi.plans AS p ON s.plan_id = p.plan_id
+                             
+  ORDER BY s.customer_id, s.start_date
+)
+
+SELECT
+COUNT(cip.plan_name) AS "Churn Count" -- The number of churn plans
+/* To get the percentage, we want to take the count of churn plans, divide by the total number of customers (gotten via the subquery), and multiply that by 100. Then we round the result to 1 decimal place. */
+,ROUND(100.0 * COUNT(cip.plan_name) /
+     /* This subquery returns the unique number of customers (which we know is 1000). We use it so we can get the full number of customers without being impacted by the outter query's WHERE clause. */
+     (SELECT
+     COUNT(DISTINCT s.customer_id)
+     
+     FROM foodie_fi.subscriptions AS s),
+     1
+) AS "Churn Percentage"
+
+FROM customer_info_plans AS cip
+
+WHERE
+cip.plan_name = 'churn' -- We only want to look at the churn plans
 ```
 
 **Table Output:**
 
+| Churn Count | Churn Percentage |
+| ----------- | ---------------- |
+| 307         | 30.7             |
 
 **Answer:**
 
-- 
+- 307 plans are cancellations (or churn), which is 30.7% of the plans.
 
 ### 5. How many customers have churned straight after their initial free trial - what percentage is this rounded to the nearest whole number?
 ___________________________________________________________________________________________________________________________
