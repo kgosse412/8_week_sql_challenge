@@ -606,19 +606,125 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| customer_info_plans | Contains information on the customer and each plan they have |
 
 **SQL Statement:**
 	
 ```sql	
+WITH customer_info_plans AS (SELECT
+  s.customer_id
+  ,s.plan_id
+  ,p.plan_name
+  ,p.price
+  ,s.start_date
 
+  FROM foodie_fi.subscriptions AS s
+  LEFT JOIN foodie_fi.plans AS p ON s.plan_id = p.plan_id
+                             
+  ORDER BY s.customer_id, s.start_date
+),
+cip_ordered AS (SELECT
+  /* Use the ROW_NUMBER window function to label each row grouped by customer_id
+  and ordered by the start_date. This will allow us to look at row 1's start_date,
+  which is the date the customer joined Foodie-Fi. */
+  ROW_NUMBER() OVER(PARTITION BY cip.customer_id ORDER BY cip.start_date) AS row
+  ,*
+
+  FROM customer_info_plans AS cip
+),
+annual_date AS (SELECT
+  *
+  /* Use the LEAD window function to label each row with the next start_date grouped
+  by customer_id and ordered by start_date. This will allow us to get the pro annual
+  plan start date because of our WHERE clause. */
+  ,LEAD(cipo.start_date) OVER(PARTITION BY cipo.customer_id ORDER BY cipo.start_date) AS annual_date
+
+  FROM cip_ordered AS cipo
+  
+  /* Only look at row 1 (which is the date the customer joined Foodie-Fi) or when the
+  plan is pro annual (because we need the date of when the customer upgraded to this plan. */
+  WHERE
+  cipo.row = 1 OR
+  cipo.plan_name = 'pro annual'
+),
+annual_date_diff AS (SELECT
+  /* Subtract the start_date (i.e. the date the customer joined Foodie-Fi) from the
+  annual_date (i.e. the date the customer upgraded to the pro annual plan), and get
+  the number of days from the difference. */
+  EXTRACT(DAY FROM ad.annual_date::timestamp - ad.start_date) AS date_diff
+
+  FROM annual_date AS ad
+
+  /* Only look at the rows where there exists both a start_date and an annual_date. This
+  is done by looking at any row where the annual_date is populated and not NULL. */
+  WHERE
+  ad.annual_date IS NOT NULL
+)
+
+SELECT
+/* Count all date_diff values. */
+COUNT(date_diff) AS "Customers"
+/* Use a CASE statement to create the various bins we need in 30 day increments.
+This will allow us to group the count above into these bins. */
+,CASE
+	WHEN add.date_diff <= 30 THEN '0 - 30 Days'
+    WHEN add.date_diff >= 31 AND add.date_diff <= 60 THEN '31 - 60 Days'
+    WHEN add.date_diff >= 61 AND add.date_diff <= 90 THEN '61 - 90 Days'
+    WHEN add.date_diff >= 91 AND add.date_diff <= 120 THEN '91 - 120 Days'
+    WHEN add.date_diff >= 121 AND add.date_diff <= 150 THEN '121 - 150 Days'
+    WHEN add.date_diff >= 151 AND add.date_diff <= 180 THEN '151 - 180 Days'
+    WHEN add.date_diff >= 181 AND add.date_diff <= 210 THEN '181 - 210 Days'
+    WHEN add.date_diff >= 210 AND add.date_diff <= 240 THEN '211 - 240 Days'
+    WHEN add.date_diff >= 241 AND add.date_diff <= 270 THEN '241 - 270 Days'
+    WHEN add.date_diff >= 271 AND add.date_diff <= 300 THEN '271 - 300 Days'
+    WHEN add.date_diff >= 301 AND add.date_diff <= 330 THEN '301 - 330 Days'
+    WHEN add.date_diff >= 331 AND add.date_diff <= 360 THEN '331 - 360 Days'
+	ELSE '> 361 Days'
+END AS "Bins"
+/* Create a CASE statement to sort the above bins by. */
+,CASE
+	WHEN add.date_diff <= 30 THEN 1
+    WHEN add.date_diff >= 31 AND add.date_diff <= 60 THEN 2
+    WHEN add.date_diff >= 61 AND add.date_diff <= 90 THEN 3
+    WHEN add.date_diff >= 91 AND add.date_diff <= 120 THEN 4
+    WHEN add.date_diff >= 121 AND add.date_diff <= 150 THEN 5
+    WHEN add.date_diff >= 151 AND add.date_diff <= 180 THEN 6
+    WHEN add.date_diff >= 181 AND add.date_diff <= 210 THEN 7
+    WHEN add.date_diff >= 210 AND add.date_diff <= 240 THEN 8
+    WHEN add.date_diff >= 241 AND add.date_diff <= 270 THEN 9
+    WHEN add.date_diff >= 271 AND add.date_diff <= 300 THEN 10
+    WHEN add.date_diff >= 301 AND add.date_diff <= 330 THEN 11
+    WHEN add.date_diff >= 331 AND add.date_diff <= 360 THEN 12
+	ELSE 13
+END AS "Bins Sort"
+
+FROM annual_date_diff AS add
+
+GROUP BY "Bins", "Bins Sort" -- Group our count into the "Bins" and "Bins Sort" columns
+
+ORDER BY "Bins Sort" -- Sort our output by "Bins Sort"
 ```
 
 **Table Output:**
 
+| Customers | Bins           | Bins Sort |
+| --------- | -------------- | --------- |
+| 49        | 0 - 30 Days    | 1         |
+| 24        | 31 - 60 Days   | 2         |
+| 34        | 61 - 90 Days   | 3         |
+| 35        | 91 - 120 Days  | 4         |
+| 42        | 121 - 150 Days | 5         |
+| 36        | 151 - 180 Days | 6         |
+| 26        | 181 - 210 Days | 7         |
+| 4         | 211 - 240 Days | 8         |
+| 5         | 241 - 270 Days | 9         |
+| 1         | 271 - 300 Days | 10        |
+| 1         | 301 - 330 Days | 11        |
+| 1         | 331 - 360 Days | 12        |
 
 **Answer:**
 
-- 
+- See table above.
 
 ### 11. How many customers downgraded from a pro monthly to a basic monthly plan in 2020?
 ___________________________________________________________________________________________________________________________
