@@ -306,27 +306,82 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
-
-Expected Results:
-
-- 
-
-I solved this by:
-
-1. 
+| customer_info_plans | Contains information on the customer and each plan they have |
 
 **SQL Statement:**
 	
 ```sql	
+WITH customer_info_plans AS (SELECT
+  s.customer_id
+  ,s.plan_id
+  ,p.plan_name
+  ,p.price
+  ,s.start_date
 
+  FROM foodie_fi.subscriptions AS s
+  LEFT JOIN foodie_fi.plans AS p ON s.plan_id = p.plan_id
+                             
+  ORDER BY s.customer_id, s.start_date
+),
+cip_lead AS (SELECT
+  /* Use the LEAD window function to label each row with the next plan_id grouped 
+  by customer_id and sorted by start_date. This will allow us to look if the row
+  we're examining is a trial plan and what the next plan_id is. */
+  LEAD(cip.plan_id) OVER(PARTITION BY cip.customer_id ORDER BY cip.start_date) AS next_plan_id
+  /* Use the LEAD window function to label each row with the next plan_name grouped 
+  by customer_id and sorted by start_date. This will allow us to look if the row
+  we're examining is a trial plan and what the next plan_name is. */
+  ,LEAD(cip.plan_name) OVER(PARTITION BY cip.customer_id ORDER BY cip.start_date) AS next_plan_name
+  ,*
+
+  FROM customer_info_plans AS cip
+
+  ORDER BY cip.customer_id ASC, cip.start_date ASC -- Sort by the customer_id first, then row
+)
+
+SELECT
+cipl.next_plan_id AS "Plan ID"
+,cipl.next_plan_name AS "Plan Name"
+/* Count every next_plan_id based on the filter in the WHERE clause */
+,COUNT(cipl.next_plan_id) AS "Total Customers After Trial"
+/* To get the percentage, we want to take the count of plans after the
+trial plan, divide by the total number of customers (gotten via the subquery),
+and multiply that by 100. Then we round to the first decimal using ROUND. */
+,ROUND(100.0 * COUNT(cipl.next_plan_id) /
+  /* This subquery returns the unique number of customers (which we know is 1000).
+  We use it so we can get the full number of customers without being impacted
+  by the outter query's WHERE clause. */
+  (SELECT
+   COUNT(DISTINCT s.customer_id)
+   
+   FROM foodie_fi.subscriptions AS s),
+   1
+) AS "Percentage of Customers After Trial"
+
+FROM cip_lead AS cipl
+
+/* We only want to look at the rows where the current plan is a trial */
+WHERE
+cipl.plan_id = 0
+
+GROUP BY cipl.next_plan_id, cipl.next_plan_name
 ```
 
 **Table Output:**
 
+| Plan ID | Plan Name     | Total Customers After Trial | Percentage of Customers After Trial |
+| ------- | ------------- | --------------------------- | ----------------------------------- |
+| 1       | basic monthly | 546                         | 54.6                                |
+| 2       | pro monthly   | 325                         | 32.5                                |
+| 3       | pro annual    | 37                          | 3.7                                 |
+| 4       | churn         | 92                          | 9.2                                 |
 
 **Answer:**
 
-- 
+- 546 customers, or 54.6% of customers, signed up for the basic monthly plan after their trial.
+- 325 customers, or 32.5% of customers, signed up for the pro monthly plan after their trial.
+- 37 customers, or 3.7% of customers, signed up for the pro annual plan after their trial.
+- 92 customers, or 9.2% of customers, cancelled their plan after their trial.
 
 ### 7. What is the customer count and percentage breakdown of all 5 plan_name values at 2020-12-31?
 ___________________________________________________________________________________________________________________________
