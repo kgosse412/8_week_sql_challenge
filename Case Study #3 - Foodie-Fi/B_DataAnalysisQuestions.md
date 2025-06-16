@@ -518,7 +518,7 @@ EXTRACT(YEAR FROM cip.start_date) = 2020
 
 - 195 customers have upgraded to the pro annual plan in 2020.
 
-### 9. How many days on average does it take for a customer to an annual plan from the day they join Foodie-Fi?
+### 9. How many days on average does it take for a customer (to upgrade) to an annual plan from the day they join Foodie-Fi?
 ___________________________________________________________________________________________________________________________
 **Overview:**
 
@@ -526,19 +526,77 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| customer_info_plans | Contains information on the customer and each plan they have |
 
 **SQL Statement:**
 	
 ```sql	
+WITH customer_info_plans AS (SELECT
+  s.customer_id
+  ,s.plan_id
+  ,p.plan_name
+  ,p.price
+  ,s.start_date
 
+  FROM foodie_fi.subscriptions AS s
+  LEFT JOIN foodie_fi.plans AS p ON s.plan_id = p.plan_id
+                             
+  ORDER BY s.customer_id, s.start_date
+),
+cip_ordered AS (SELECT
+  /* Use the ROW_NUMBER window function to label each row grouped by customer_id
+  and ordered by the start_date. This will allow us to look at row 1's start_date,
+  which is the date the customer joined Foodie-Fi. */
+  ROW_NUMBER() OVER(PARTITION BY cip.customer_id ORDER BY cip.start_date) AS row
+  ,*
+
+  FROM customer_info_plans AS cip
+),
+annual_date AS (SELECT
+  *
+  /* Use the LEAD window function to label each row with the next start_date grouped
+  by customer_id and ordered by start_date. This will allow us to get the pro annual
+  plan start date because of our WHERE clause. */
+  ,LEAD(cipo.start_date) OVER(PARTITION BY cipo.customer_id ORDER BY cipo.start_date) AS annual_date
+
+  FROM cip_ordered AS cipo
+  
+  /* Only look at row 1 (which is the date the customer joined Foodie-Fi) or when the
+  plan is pro annual (because we need the date of when the customer upgraded to this plan. */
+  WHERE
+  cipo.row = 1 OR
+  cipo.plan_name = 'pro annual'
+)
+
+SELECT
+/* Round the average to the nearest whole number. */
+ROUND(
+  /* Take the average of the difference between all the dates. */
+  AVG(
+    /* Subtract the start_date (i.e. the date the customer joined Foodie-Fi) from the
+    annual_date (i.e. the date the customer upgraded to the pro annual plan), and get
+    the number of days from the difference. */
+    EXTRACT(DAY FROM ad.annual_date::timestamp - ad.start_date)
+  )
+) AS "Number of Days To Upgrade To Pro Annual"
+
+FROM annual_date AS ad
+
+/* Only look at the rows where there exists both a start_date and an annual_date. This
+is done by looking at any row where the annual_date is populated and not NULL. */
+WHERE
+ad.annual_date IS NOT NULL
 ```
 
 **Table Output:**
 
+| Number of Days To Upgrade To Pro Annual |
+| --------------------------------------- |
+| 105                                     |
 
 **Answer:**
 
-- 
+- It took 105 days on average for customers to upgrade to the pro annual plan.
 
 ### 10. Can you further breakdown this average value into 30 day periods (i.e. 0-30 days, 31-60 days etc)?
 ___________________________________________________________________________________________________________________________
