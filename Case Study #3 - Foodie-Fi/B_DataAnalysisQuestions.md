@@ -734,16 +734,52 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| customer_info_plans | Contains information on the customer and each plan they have |
 
 **SQL Statement:**
 	
 ```sql	
+WITH customer_info_plans AS (SELECT
+  s.customer_id
+  ,s.plan_id
+  ,p.plan_name
+  ,p.price
+  ,s.start_date
 
+  FROM foodie_fi.subscriptions AS s
+  LEFT JOIN foodie_fi.plans AS p ON s.plan_id = p.plan_id
+                             
+  ORDER BY s.customer_id, s.start_date
+),
+cip_previous_plan AS (SELECT
+  *
+  /* Use the LAG window function to label each row with the previous plan_name grouped
+  by customer_id and ordered by start_date. This will allow us to see when a current plan
+  is the basic monthly and the previous one was pro monthly. */
+  ,LAG(cip.plan_name) OVER (PARTITION BY cip.customer_id ORDER BY cip.start_date) AS previous_plan
+
+  FROM customer_info_plans AS cip
+)
+
+SELECT
+COUNT(*) AS "Number of Downgrades" -- Count all rows based on the WHERE criteria
+
+FROM cip_previous_plan AS cip_prev
+
+/* We only want to look at the data where the current plan is basic monthly and the
+previous plan was a pro monthly. We also only want to look at the year 2020. */
+WHERE
+cip_prev.plan_name = 'basic monthly' AND
+cip_prev.previous_plan = 'pro monthly' AND
+EXTRACT(YEAR FROM cip_prev.start_date) = 2020
 ```
 
 **Table Output:**
 
+| Number of Downgrades |
+| -------------------- |
+| 0                    |
 
 **Answer:**
 
-- 
+- 0 customers downgraded from a pro monthly plan to a basic monthly plan in 2020.
