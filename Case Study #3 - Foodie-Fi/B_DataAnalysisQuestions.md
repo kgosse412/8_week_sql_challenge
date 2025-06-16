@@ -391,27 +391,84 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
-
-Expected Results:
-
-- 
-
-I solved this by:
-
-1. 
+| customer_info_plans | Contains information on the customer and each plan they have |
 
 **SQL Statement:**
 	
 ```sql	
+WITH customer_info_plans AS (SELECT
+  s.customer_id
+  ,s.plan_id
+  ,p.plan_name
+  ,p.price
+  ,s.start_date
 
+  FROM foodie_fi.subscriptions AS s
+  LEFT JOIN foodie_fi.plans AS p ON s.plan_id = p.plan_id
+                             
+  ORDER BY s.customer_id, s.start_date
+),
+cip_next_date AS (SELECT
+  *
+  /* Use the LEAD window function to label each row with the next start_date grouped by
+  customer_id and ordered by start_date. This will leave the latest start_date (which we
+  need for the evaluation) as NULL and allow us to filter on that value */
+  ,LEAD(start_date) OVER(PARTITION BY cip.customer_id ORDER BY cip.start_date) AS next_date
+
+  FROM customer_info_plans AS cip
+  
+  WHERE
+  cip.start_date <= '2020-12-31'::timestamp
+)
+
+SELECT
+cipnd.plan_id AS "Plan ID"
+,cipnd.plan_name AS "Plan Name"
+/* Count the number of plans based on the WHERE clause */
+,COUNT(cipnd.plan_name) AS "Total Plans"
+/* To get the percentage, we want to take the count of plans, divide by the
+total number of customers (gotten via the subquery), and multiply that by
+100. Then we round to the first decimal using ROUND. */
+,ROUND(100.0 * COUNT(cipnd.plan_name) /
+  /* This subquery returns the unique number of customers (which we know is 1000).
+  We use it so we can get the full number of customers without being impacted
+  by the outter query's WHERE clause. */
+  (SELECT
+   COUNT(DISTINCT s.customer_id)
+   
+   FROM foodie_fi.subscriptions AS s),
+   1
+) AS "Percentage of Total Plans"
+
+FROM cip_next_date as cipnd
+
+/* Only look at the latest start_date for each customer. See
+explanation in the CTE for why this works. */
+WHERE
+cipnd.next_date IS NULL
+
+GROUP BY "Plan ID", "Plan Name"
+
+ORDER BY "Plan ID" ASC
 ```
 
 **Table Output:**
 
+| Plan ID | Plan Name     | Total Plans | Percentage of Total Plans |
+| ------- | ------------- | ----------- | ------------------------- |
+| 0       | trial         | 19          | 1.9                       |
+| 1       | basic monthly | 224         | 22.4                      |
+| 2       | pro monthly   | 326         | 32.6                      |
+| 3       | pro annual    | 195         | 19.5                      |
+| 4       | churn         | 236         | 23.6                      |
 
 **Answer:**
 
-- 
+- 19 customers, or 1.9% of customers, are currently signed up with the trial plan.
+- 224 customers, or 22.4% of customers, are currently signed up with the basic monthly plan.
+- 326 customers, or 32.6% of customers, are currently signed up with the pro monthly plan.
+- 195 customers, or 19.5% of customers, are currently signed up with the pro annual plan.
+- 236 customers, or 23.6% of custoemrs, have cancelled their plans.
 
 ### 8. How many customers have upgraded to an annual plan in 2020?
 ___________________________________________________________________________________________________________________________
