@@ -478,27 +478,45 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
-
-Expected Results:
-
-- 
-
-I solved this by:
-
-1. 
+| customer_info_plans | Contains information on the customer and each plan they have |
 
 **SQL Statement:**
 	
 ```sql	
+WITH customer_info_plans AS (SELECT
+  s.customer_id
+  ,s.plan_id
+  ,p.plan_name
+  ,p.price
+  ,s.start_date
 
+  FROM foodie_fi.subscriptions AS s
+  LEFT JOIN foodie_fi.plans AS p ON s.plan_id = p.plan_id
+                             
+  ORDER BY s.customer_id, s.start_date
+)
+
+SELECT
+/* Count all rows based on the WHERE clause criteria. */
+COUNT(*) AS "Number of Pro Annual Upgrades"
+
+FROM customer_info_plans AS cip
+
+/* We only want to look at pro annual plans in the year 2020. */
+WHERE
+cip.plan_name = 'pro annual' AND
+EXTRACT(YEAR FROM cip.start_date) = 2020
 ```
 
 **Table Output:**
 
+| Number of Pro Annual Upgrade |
+| ---------------------------- |
+| 195                          |
 
 **Answer:**
 
-- 
+- 195 customers have upgraded to the pro annual plan in 2020.
 
 ### 9. How many days on average does it take for a customer to an annual plan from the day they join Foodie-Fi?
 ___________________________________________________________________________________________________________________________
@@ -508,14 +526,6 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
-
-Expected Results:
-
-- 
-
-I solved this by:
-
-1. 
 
 **SQL Statement:**
 	
@@ -539,14 +549,6 @@ Tables Used:
 | Table | Why |
 | ----- | --- |
 
-Expected Results:
-
-- 
-
-I solved this by:
-
-1. 
-
 **SQL Statement:**
 	
 ```sql	
@@ -568,14 +570,6 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
-
-Expected Results:
-
-- 
-
-I solved this by:
-
-1. 
 
 **SQL Statement:**
 	
