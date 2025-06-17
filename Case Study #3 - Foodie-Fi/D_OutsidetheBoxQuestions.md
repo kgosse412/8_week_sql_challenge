@@ -191,33 +191,15 @@ FROM ptf_metrics AS ptfm
 
 ### 2. What key metrics would you recommend Foodie-Fi management to track over time to assess performance of their overall business?
 ___________________________________________________________________________________________________________________________
-**Overview:**
-
-Tables Used:
-
-| Table | Why |
-| ----- | --- |
-
-Expected Results:
-
-- 
-
-I solved this by:
-
-1. 
-
-**SQL Statement:**
-	
-```sql	
-
-```
-
-**Table Output:**
-
 
 **Answer:**
 
-- 
+- I would have Foodie-Fi track the following:
+	- Customer Growth Rate
+	- Revenue Growth Rate
+	- Number of Customers Per plan
+	- How many customers convert from trial to a paid membership
+	- How many customers cancel and why they cancel
 
 ### 3. What are some key customer journeys or experiences that you would analyse further to improve customer retention?
 ___________________________________________________________________________________________________________________________
