@@ -240,4 +240,16 @@ ________________________________________________________________________________
 ___________________________________________________________________________________________________________________________
 **Answer:**
 
-- 
+Business levers to reduce churn rate:
+- Promo prices
+- Add more shows to the catalog
+- Fix any technical \ service issues
+
+How would I validate the effecetiveness of these ideas:
+- I would monitor the metrics from question B with these questions in mind:
+	a. Is our customer base growing or shrinking?
+	b. Is our revenue going up or down?
+	c. How many customers are converting from the trial to a paid membership?
+	d. Are customers upgrading or downgrading plans (and why)?
+	e. How much churn exists?
+	f. How often are customers using their subscription service?
