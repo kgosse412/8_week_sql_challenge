@@ -21,6 +21,7 @@ Tables Used:
 | customer_info_plans | Contains information on the customer and each plan they have |
 
 Expected Results:
+
 ![Question C Sample Output](Images/question_c_sample_output.png)
 
 **SQL Statement:**
