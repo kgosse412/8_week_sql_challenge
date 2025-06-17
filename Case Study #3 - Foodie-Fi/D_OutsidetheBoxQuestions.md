@@ -200,6 +200,7 @@ ________________________________________________________________________________
 	- How many customers convert from trial to a paid membership
 	- How many customers upgrade or downgrade their plans and why
 	- How many customers cancel and why
+	- How often customers use their Foodie-Fi subscription
 
 ### 3. What are some key customer journeys or experiences that you would analyse further to improve customer retention?
 ___________________________________________________________________________________________________________________________
@@ -214,7 +215,26 @@ ________________________________________________________________________________
 ___________________________________________________________________________________________________________________________
 **Answer:**
 
-- 
+1. Why are you cancelling your plan?
+	a. Too costly
+	b. Don't use it enough
+	c. Found a better option
+	d. Not interesting enough
+	e. Other (please specify)
+
+2. How long had you used Foodie-Fi?
+	a. Less than 1 month
+	b. 1 - 3 months
+	c. 3 - 6 months
+	d. 6 - 9 months
+	d. 9 - 12 months
+	e. More than 12 months
+
+3. On a scale of 1 to 5 with 1 being very unsatisfied and 5 being very satisfied, how satisfied were you with your membership?
+
+4. On a scale of 1 to 5 with 1 being very unlikely and 5 being very likely, how likely are you to recommend us to friends and family?
+
+5. Is there any feedback you want to provide?
 
 ### 5. What business levers could the Foodie-Fi team use to reduce the customer churn rate? How would you validate the effectiveness of your ideas?
 ___________________________________________________________________________________________________________________________
