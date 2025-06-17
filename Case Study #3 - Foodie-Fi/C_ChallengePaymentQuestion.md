@@ -41,7 +41,7 @@ WITH customer_info_plans AS (SELECT
 ),
 cip_cutoff_date AS (SELECT
 cip.*
-/* Use the LEAD window function to figure out if there is a cutoff date when someone changes their
+/* Use the LEAD window function to figur out if their is a cutoff date when someone changes their
 plan. If they change plans, the cutoff_date is populated. If not, it is left as null. This will
 come in handy when we generate our end dates for the payments table. */
 ,LEAD(cip.start_date) OVER(PARTITION BY cip.customer_id ORDER BY cip.start_date) AS cutoff_date
@@ -120,15 +120,15 @@ payment_table_full AS (SELECT
       /* Otherwise, leave the amount alone */
       ELSE pt_temp.amount
   END AS amount
+  /* Use the ROW_NUMBER window function to label each row with a payment_order number grouped
+  by the customer_id and ordered by the payment_date. */
+  ,ROW_NUMBER() OVER(PARTITION BY pt_temp.customer_id ORDER BY pt_temp.payment_date) AS payment_order
 
   FROM payment_table_temp AS pt_temp
 )
 
 SELECT
 ptf.*
-/* Use the ROW_NUMBER window function to label each row with a payment_order number grouped
-by the customer_id and ordered by the payment_date. */
-,ROW_NUMBER() OVER(PARTITION BY ptf.customer_id ORDER BY ptf.payment_date) AS payment_order
 
 FROM payment_table_full AS ptf
 
