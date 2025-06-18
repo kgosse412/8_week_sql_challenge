@@ -20,18 +20,37 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| customer_transactions | Contains information on the transaction types |
 
 **SQL Statement:**
 	
 ```sql	
+SELECT
+ct.txn_type AS "Transaction Type"
+/* Assumes that each transaction is unique on it's own, meaning each customer_id, txn_date,
+txn_type, and txn_amount is different from all other values in the table. */
+,COUNT(*) AS "Unique Count"
+/* Add up the transaction amounts. */
+,SUM(ct.txn_amount) AS "Transaction Amount Total"
 
+FROM data_bank.customer_transactions AS ct
+
+GROUP BY "Transaction Type" -- Group by our transaction type
+
+ORDER BY "Transaction Type" -- Sort by transaction type (to make the output prettier)
 ```
 
 **Table Output:**
 
+| Transaction Type | Unique Count | Transaction Amount Total |
+| ---------------- | ------------ | ------------------------ |
+| deposit          | 2671         | 1359168                  |
+| purchase         | 1617         | 806537                   |
+| withdrawal       | 1580         | 793003                   |
+
 **Answer:**
 
--
+- See table above.
 
 ### 2. What is the average total historical deposit counts and amounts for all customers?
 ___________________________________________________________________________________________________________________________
