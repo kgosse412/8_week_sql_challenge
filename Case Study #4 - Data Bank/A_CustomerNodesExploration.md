@@ -1,15 +1,15 @@
 # Customer Nodes Exploration
 ## Table of Contents
 
-[1. How many unique nodes are there on the Data Bank system?]()
+[1. How many unique nodes are there on the Data Bank system?](#1-how-many-unique-nodes-are-there-on-the-data-bank-system)
 
-[2. What is the number of nodes per region?]()
+[2. What is the number of nodes per region?](#2-what-is-the-number-of-nodes-per-region)
 
-[3. How many customers are allocated to each region?]()
+[3. How many customers are allocated to each region?](#3-how-many-customers-are-allocated-to-each-region)
 
-[4. How many days on average are customers reallocated to a different node?]()
+[4. How many days on average are customers reallocated to a different node?](#4-how-many-days-on-average-are-customers-reallocated-to-a-different-node)
 
-[5. What is the median, 80th, and 95th percentile for this same reallocation days metric for each region?]()
+[5. What is the median, 80th, and 95th percentile for this same reallocation days metric for each region?](#5-what-is-the-median-80th-and-95th-percentile-for-this-same-reallocation-days-metric-for-each-region)
 
 ## Questions and Answers
 ### 1. How many unique nodes are there on the Data Bank system?
