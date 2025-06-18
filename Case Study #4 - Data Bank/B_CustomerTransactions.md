@@ -70,11 +70,12 @@ WITH deposit_metrics AS (SELECT
   /* Assumes that each transaction is unique on it's own, meaning each customer_id, txn_date,
   txn_type, and txn_amount is different from all other values in the table. */
   ,COUNT(*) AS deposit_count
-  /* Add up the transaction amounts. */
+  /* Average the transaction amounts. */
   ,ROUND(AVG(ct.txn_amount), 2) AS avg_deposits
 
   FROM data_bank.customer_transactions AS ct
-
+  
+  /* Only look at deposit transaction types. */
   WHERE
   ct.txn_type = 'deposit'
 
@@ -82,7 +83,9 @@ WITH deposit_metrics AS (SELECT
 )
 
 SELECT
+/* Average the number of deposits and round to the nearest whole number. */
 ROUND(AVG(dm.deposit_count)) AS "Average Deposit Count"
+/* Average the average deposit amount and round to 2 decimal places. */
 ,ROUND(AVG(dm.avg_deposits), 2) AS "Average Deposit Amount"
 
 FROM deposit_metrics AS dm
