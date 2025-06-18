@@ -11,7 +11,7 @@ All solutions used PostgreSQL v17.
 ## Questions and Answers
 ### A. Customer Nodes Exploration
 __________________________________
-All questions and solutions for Customer Nodes Exploration can be found in the [Customer Nodes Exploration](A_CustomerNodeExploration.md) file.
+All questions and solutions for Customer Nodes Exploration can be found in the [Customer Nodes Exploration](A_CustomerNodesExploration.md) file.
 
 ### B. Customer Transactions
 _____________________________________
