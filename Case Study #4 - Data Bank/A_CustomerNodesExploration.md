@@ -146,18 +146,46 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| customer_nodes | Contains information on the start and end dates for each node allocation |
 
 **SQL Statement:**
 	
 ```sql	
+WITH node_days AS (SELECT 
+  cn.customer_id
+  ,cn.node_id
+  /* Add the the number of days between the start_date and the end_date per each customer
+  and node. NOTE: EXTRACT requires a TIMESTAMP, but end_date and start_date are of a DATE
+  type, so they need to be converted using ::timestamp. */
+  ,SUM(EXTRACT(DAY FROM end_date::timestamp - start_date::timestamp)) AS date_diff_sum
 
+  FROM data_bank.customer_nodes AS cn
+
+  WHERE
+  /* We only want to look at the data where there is a definitive end_date. If the end_date
+  is 9999-12-31, then the customer is still on that node and we can exclude it from our
+  calculation. */
+  cn.end_date != '9999-12-31'
+
+  GROUP BY cn.customer_id, cn.node_id
+)
+                   
+SELECT
+/* Take the average of date_diff_sum and round to the nearest whole number. */
+ROUND(AVG(nd.date_diff_sum)) AS "Average Days Spent in Node"
+
+FROM node_days AS nd
 ```
 
 **Table Output:**
 
+| Average Days Spent in Node |
+| -------------------------- |
+| 24                         |
+
 **Answer:**
 
--
+- Customers are reallocated to a new node roughly every 24 days.
 
 ### 5. What is the median, 80th, and 95th percentile for this same reallocation days metric for each region?
 ___________________________________________________________________________________________________________________________
