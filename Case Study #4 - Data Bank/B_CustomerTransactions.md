@@ -60,18 +60,43 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| customer_transactions | Contains deposit information |
 
 **SQL Statement:**
 	
 ```sql	
+WITH deposit_metrics AS (SELECT
+  ct.customer_id
+  /* Assumes that each transaction is unique on it's own, meaning each customer_id, txn_date,
+  txn_type, and txn_amount is different from all other values in the table. */
+  ,COUNT(*) AS deposit_count
+  /* Add up the transaction amounts. */
+  ,ROUND(AVG(ct.txn_amount), 2) AS avg_deposits
 
+  FROM data_bank.customer_transactions AS ct
+
+  WHERE
+  ct.txn_type = 'deposit'
+
+  GROUP BY ct.customer_id -- Group by Customer
+)
+
+SELECT
+ROUND(AVG(dm.deposit_count)) AS "Average Deposit Count"
+,ROUND(AVG(dm.avg_deposits), 2) AS "Average Deposit Amount"
+
+FROM deposit_metrics AS dm
 ```
 
 **Table Output:**
 
+| Average Deposit Count | Average Deposit Amount |
+| --------------------- | ---------------------- |
+| 5                     | 508.61                 |
+
 **Answer:**
 
--
+- On average, 5 deposits are made per month with an average of $508.61 per deposit.
 
 ### 3. For each month - how many Data Bank customers make more than 1 deposit and either 1 purchase or 1 withdrawal in a single month?
 ___________________________________________________________________________________________________________________________
