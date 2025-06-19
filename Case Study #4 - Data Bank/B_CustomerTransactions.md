@@ -109,18 +109,64 @@ Tables Used:
 
 | Table | Why |
 | ----- | --- |
+| customer_transactions | Contains transaction type information |
 
 **SQL Statement:**
 	
 ```sql	
+WITH txn_type_amts AS (SELECT
+  ct.customer_id
+  ,EXTRACT(MONTH FROM ct.txn_date::timestamp) AS month_num
+  /* Add up all the times a customer makes a deposit. */
+  ,SUM(
+    CASE
+      WHEN ct.txn_type = 'deposit' THEN 1
+      ELSE 0
+    END
+  ) AS total_deposits
+  /* Add up all the times a customer makes a purchase or withdrawal. */
+  ,SUM(
+    CASE
+      WHEN ct.txn_type = 'purchase' OR ct.txn_type = 'withdrawal' THEN 1
+      ELSE 0
+    END
+  ) AS total_purchases_or_withdrawals
+  
+  FROM data_bank.customer_transactions AS ct
 
+  GROUP BY 1, 2 -- Group the aggregrates by customer_id and txn_date
+)
+
+SELECT
+amts.month_num AS "Month Num"
+/* Count all the customers */
+,COUNT(DISTINCT amts.customer_id) AS "Customer Count"
+
+FROM txn_type_amts AS amts
+
+/* Only look at data where deposits is greater than 1 and
+withdrawal or purchases is equal to 1. */
+WHERE
+amts.total_deposits > 1 AND
+amts.total_purchases_or_withdrawals = 1
+
+GROUP BY "Month Num"
+
+ORDER BY "Month Num"
 ```
 
 **Table Output:**
 
+| Month Num | Customer Count |
+| --------- | -------------- |
+| 1         | 53             |
+| 2         | 36             |
+| 3         | 38             |
+| 4         | 22             |
+
 **Answer:**
 
--
+- See table above.
 
 ### 4. What is the closing balance for each customer at the end of the month?
 ___________________________________________________________________________________________________________________________
