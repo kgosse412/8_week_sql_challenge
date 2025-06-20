@@ -124,13 +124,20 @@ WITH txn_type_amts AS (SELECT
       ELSE 0
     END
   ) AS total_deposits
-  /* Add up all the times a customer makes a purchase or withdrawal. */
+  /* Add up all the times a customer makes a purchase. */
   ,SUM(
     CASE
-      WHEN ct.txn_type = 'purchase' OR ct.txn_type = 'withdrawal' THEN 1
+      WHEN ct.txn_type = 'purchase' THEN 1
       ELSE 0
     END
-  ) AS total_purchases_or_withdrawals
+  ) AS total_purchases
+  /* Add up all the times a customer makes a withdrawal. */
+  ,SUM(
+    CASE
+      WHEN ct.txn_type = 'withdrawal' THEN 1
+      ELSE 0
+    END
+  ) AS total_withdrawals
   
   FROM data_bank.customer_transactions AS ct
 
@@ -148,7 +155,7 @@ FROM txn_type_amts AS amts
 withdrawal or purchases is equal to 1. */
 WHERE
 amts.total_deposits > 1 AND
-amts.total_purchases_or_withdrawals = 1
+(amts.total_purchases = 1 OR amts.total_withdrawals = 1)
 
 GROUP BY "Month Num"
 
@@ -159,10 +166,10 @@ ORDER BY "Month Num"
 
 | Month Num | Customer Count |
 | --------- | -------------- |
-| 1         | 53             |
-| 2         | 36             |
-| 3         | 38             |
-| 4         | 22             |
+| 1         | 115            |
+| 2         | 108            |
+| 3         | 113            |
+| 4         | 50             |
 
 **Answer:**
 
