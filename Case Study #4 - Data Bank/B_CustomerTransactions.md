@@ -320,7 +320,7 @@ ORDER BY "Customer" ASC, "End of Month" ASC
 
 ### 5. What is the percentage of customers who increase their closing balance by more than 5%?
 ___________________________________________________________________________________________________________________________
-> NOTE: It's not clear from the question if the closing balance is just the final month of April or if we're looking at each month v the previous month's balance, so I have to decided to look at each month v the previous month's balance. If at any point between January and April a customer has increased their balance by greather than 5%, then they count towards the percentage in question.
+> NOTE: It's not clear from the question if the closing balance is just the final month of April or if we're looking at each month v the previous month's balance, so I have to decided to look at each month v the previous month's balance. If at any point between January and April a customer has increased their balance by greater than 5%, then they count towards the percentage in question.
 
 **Overview:**
 
