@@ -1,7 +1,11 @@
 # Data Allocation Challenge
 ## Table of Contents
 
-[]()
+[Running Customer Balance Column that Includes the Impact of Each Transaction](#Running-Customer-Balance-Column-that-Includes-the-Impact-of-Each-Transaction)
+
+[Customer Balance at the End of Each Month](#Customer-Balance-at-the-End-of-Each-Month)
+
+[Minimum, Average, and Maximum Values of the Running Balance for Each Customer](#Minimum-Average-and-Maximum-Values-of-the-Running-Balance-for-Each-Customer)
 
 ## Questions and Answers
 ### Using all of the data available - how much data would have been required for each option on a monthly basis?
@@ -21,7 +25,7 @@ For this multi-part challenge question - you have been requested to generate the
 - customer balance at the end of each month
 - minimum, average and maximum values of the running balance for each customer
 
-#### Option 1: Data is Allocated Based Off the Amount of Money at the End of the Previous Month
+#### Running Customer Balance Column that Includes the Impact of Each Transaction
 
 **Overview:**
 
@@ -42,7 +46,7 @@ Tables Used:
 
 -
 
-#### Option 2: Data is Allocated On the Average Amount of Money Kept in the Account in the Previous 30 Days
+#### Customer Balance at the End of Each Month
 
 **Overview:**
 
@@ -63,7 +67,7 @@ Tables Used:
 
 -
 
-#### Option 3: Data is Updated in Real-Time
+#### Minimum, Average, and Maximum Values of the Running Balance for Each Customer
 
 **Overview:**
 
