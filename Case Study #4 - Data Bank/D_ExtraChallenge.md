@@ -1,8 +1,4 @@
 # Extra Challenge
-## Table of Contents
-
-[]()
-
 ## Questions and Answers
 ### If the annual interest rate is set at 6% and the Data Bank team wants to reward its customers by increasing their data allocation based off the interest calculated on a daily basis at the end of each day, how much data would be required for this option on a monthly basis?
 ___________________________________________________________________________________________________________________________
