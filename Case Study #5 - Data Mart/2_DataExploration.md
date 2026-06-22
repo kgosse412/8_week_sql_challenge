@@ -449,12 +449,117 @@ Retail has 1,081,934,227 total transactions and Shopify has 5,925,169.
 ___________________________________________________________________________________________________________________________
 **SQL Statement:**
 	
-```sql	
+```sql
+/* Fix the date so it has a full 4 digit year for later conversion */
+WITH date_fix AS (
+  SELECT
+  ws.*
+  /* Fix the year to be a full 4 digits before converting to date format*/
+  ,TO_DATE(LEFT(ws.week_date, LENGTH(ws.week_date) - 2) || '20' || RIGHT(ws.week_date, 2), 'DD-MM-YYYY') AS wk_date
+  
+  FROM data_mart.weekly_sales AS ws
+),
+clean_weekly_sales AS (
+  SELECT
+  df.wk_date AS week_date
+  ,EXTRACT('week' FROM df.wk_date) AS week_number
+  ,EXTRACT('month' FROM df.wk_date) AS month_number
+  ,EXTRACT('year' FROM df.wk_date) AS calendar_year
+  ,df.region
+  ,df.platform
+  /* Change the null value in segment to unknown */
+  ,CASE
+  	WHEN df.segment = 'null' THEN 'unknown'
+  	ELSE df.segment
+  END AS segment
+  /* Create a new column from segment called age_band. Based only on the number from the segment column. */
+  ,CASE
+  	WHEN RIGHT(df.segment, 1) = '1' THEN 'Young Adults'
+    WHEN RIGHT(df.segment, 1) = '2' THEN 'Middle Aged'
+    WHEN RIGHT(df.segment, 1) = '3' OR RIGHT(df.segment, 1) = '4' THEN 'Retirees'
+  	ELSE 'unknown'
+  END AS age_band
+  /* Create a new column from segment called demographic. Based only on the letter from the segment column. */
+  ,CASE
+  	WHEN LEFT(df.segment, 1) = 'C' THEN 'Couples'
+    WHEN LEFT(df.segment, 1) = 'F' THEN 'Families'
+  	ELSE 'unknown'
+  END AS demographic
+  ,df.customer_type
+  ,df.transactions
+  ,df.sales
+  /* Create new column called avg_transactions using the sales and transactions columns. Round to 2 decimal places. */
+  ,ROUND(df.sales::numeric / df.transactions, 2) AS avg_transaction
+    
+  FROM date_fix AS df
+),
+sales_sum AS (
+  SELECT
+  cws.platform
+  ,cws.month_number
+  ,cws.calendar_year
+  ,SUM(cws.sales) AS total_sales
+  
+  FROM clean_weekly_sales AS cws
+  
+  GROUP BY cws.platform, cws.month_number, cws.calendar_year
+  
+  ORDER BY cws.calendar_year ASC, cws.month_number ASC, cws.platform ASC
+)
+
+SELECT
+ss.calendar_year
+,ss.month_number
+/* 1. Get the sales of the designated platform
+** 2. Divide by the sum of the total_sales of the two platforms for that month and year
+** 3. Multiply by 100 to turn it into a percentage
+** 4. Round to the nearest 2 decimal places
+*/
+,ROUND(
+  MAX(CASE
+    WHEN ss.platform = 'Retail' THEN ss.total_sales
+    ELSE 0
+  END) / SUM(ss.total_sales) * 100, 2) AS retail_percentage
+,ROUND(
+  MAX(CASE
+    WHEN ss.platform = 'Shopify' THEN ss.total_sales
+    ELSE 0
+  END) / SUM(ss.total_sales) * 100, 2) AS shopify_percentage
+
+FROM sales_sum AS ss
+
+GROUP BY ss.calendar_year, ss.month_number
+
+ORDER BY ss.calendar_year ASC, ss.month_number ASC;
 ```
 
 **Table Output:**
+| calendar_year | month_number | retail_percentage | shopify_percentage |
+| ------------- | ------------ | ----------------- | ------------------ |
+| 2018          | 3            | 97.92             | 2.08               |
+| 2018          | 4            | 97.93             | 2.07               |
+| 2018          | 5            | 97.73             | 2.27               |
+| 2018          | 6            | 97.76             | 2.24               |
+| 2018          | 7            | 97.75             | 2.25               |
+| 2018          | 8            | 97.71             | 2.29               |
+| 2018          | 9            | 97.68             | 2.32               |
+| 2019          | 3            | 97.71             | 2.29               |
+| 2019          | 4            | 97.80             | 2.20               |
+| 2019          | 5            | 97.52             | 2.48               |
+| 2019          | 6            | 97.42             | 2.58               |
+| 2019          | 7            | 97.35             | 2.65               |
+| 2019          | 8            | 97.21             | 2.79               |
+| 2019          | 9            | 97.09             | 2.91               |
+| 2020          | 3            | 97.30             | 2.70               |
+| 2020          | 4            | 96.96             | 3.04               |
+| 2020          | 5            | 96.71             | 3.29               |
+| 2020          | 6            | 96.80             | 3.20               |
+| 2020          | 7            | 96.67             | 3.33               |
+| 2020          | 8            | 96.51             | 3.49               |
 
 **Answer:**
+
+See table for answer.
 
 ### 7. What is the percentage of sales by demographic for each year in the dataset?
 ___________________________________________________________________________________________________________________________
