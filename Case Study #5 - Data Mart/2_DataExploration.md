@@ -261,12 +261,119 @@ See table for answer.
 ___________________________________________________________________________________________________________________________
 **SQL Statement:**
 	
-```sql	
+```sql
+/* Fix the date so it has a full 4 digit year for later conversion */
+WITH date_fix AS (
+  SELECT
+  ws.*
+  /* Fix the year to be a full 4 digits before converting to date format*/
+  ,TO_DATE(LEFT(ws.week_date, LENGTH(ws.week_date) - 2) || '20' || RIGHT(ws.week_date, 2), 'DD-MM-YYYY') AS wk_date
+  
+  FROM data_mart.weekly_sales AS ws
+),
+clean_weekly_sales AS (
+  SELECT
+  df.wk_date AS week_date
+  ,EXTRACT('week' FROM df.wk_date) AS week_number
+  ,EXTRACT('month' FROM df.wk_date) AS month_number
+  ,EXTRACT('year' FROM df.wk_date) AS calendar_year
+  ,df.region
+  ,df.platform
+  /* Change the null value in segment to unknown */
+  ,CASE
+  	WHEN df.segment = 'null' THEN 'unknown'
+  	ELSE df.segment
+  END AS segment
+  /* Create a new column from segment called age_band. Based only on the number from the segment column. */
+  ,CASE
+  	WHEN RIGHT(df.segment, 1) = '1' THEN 'Young Adults'
+    WHEN RIGHT(df.segment, 1) = '2' THEN 'Middle Aged'
+    WHEN RIGHT(df.segment, 1) = '3' OR RIGHT(df.segment, 1) = '4' THEN 'Retirees'
+  	ELSE 'unknown'
+  END AS age_band
+  /* Create a new column from segment called demographic. Based only on the letter from the segment column. */
+  ,CASE
+  	WHEN LEFT(df.segment, 1) = 'C' THEN 'Couples'
+    WHEN LEFT(df.segment, 1) = 'F' THEN 'Families'
+  	ELSE 'unknown'
+  END AS demographic
+  ,df.customer_type
+  ,df.transactions
+  ,df.sales
+  /* Create new column called avg_transactions using the sales and transactions columns. Round to 2 decimal places. */
+  ,ROUND(df.sales::numeric / df.transactions, 2) AS avg_transaction
+    
+  FROM date_fix AS df
+)
+
+SELECT
+cws.month_number
+,cws.region
+,SUM(cws.sales) AS total_sales
+
+FROM clean_weekly_sales AS cws
+
+GROUP BY cws.month_number, cws.region
+
+ORDER BY cws.month_number ASC, cws.region ASC	
 ```
 
 **Table Output:**
+| month_number | region        | total_sales |
+| ------------ | ------------- | ----------- |
+| 3            | AFRICA        | 567767480   |
+| 3            | ASIA          | 529770793   |
+| 3            | CANADA        | 144634329   |
+| 3            | EUROPE        | 35337093    |
+| 3            | OCEANIA       | 783282888   |
+| 3            | SOUTH AMERICA | 71023109    |
+| 3            | USA           | 225353043   |
+| 4            | AFRICA        | 1911783504  |
+| 4            | ASIA          | 1804628707  |
+| 4            | CANADA        | 484552594   |
+| 4            | EUROPE        | 127334255   |
+| 4            | OCEANIA       | 2599767620  |
+| 4            | SOUTH AMERICA | 238451531   |
+| 4            | USA           | 759786323   |
+| 5            | AFRICA        | 1647244738  |
+| 5            | ASIA          | 1526285399  |
+| 5            | CANADA        | 412378365   |
+| 5            | EUROPE        | 109338389   |
+| 5            | OCEANIA       | 2215657304  |
+| 5            | SOUTH AMERICA | 201391809   |
+| 5            | USA           | 655967121   |
+| 6            | AFRICA        | 1767559760  |
+| 6            | ASIA          | 1619482889  |
+| 6            | CANADA        | 443846698   |
+| 6            | EUROPE        | 122813826   |
+| 6            | OCEANIA       | 2371884744  |
+| 6            | SOUTH AMERICA | 218247455   |
+| 6            | USA           | 703878990   |
+| 7            | AFRICA        | 1960219710  |
+| 7            | ASIA          | 1768844756  |
+| 7            | CANADA        | 477134947   |
+| 7            | EUROPE        | 136757466   |
+| 7            | OCEANIA       | 2563459400  |
+| 7            | SOUTH AMERICA | 235582776   |
+| 7            | USA           | 760331754   |
+| 8            | AFRICA        | 1809596890  |
+| 8            | ASIA          | 1663320609  |
+| 8            | CANADA        | 447073019   |
+| 8            | EUROPE        | 122102995   |
+| 8            | OCEANIA       | 2432313652  |
+| 8            | SOUTH AMERICA | 221166052   |
+| 8            | USA           | 712002790   |
+| 9            | AFRICA        | 276320987   |
+| 9            | ASIA          | 252836807   |
+| 9            | CANADA        | 69067959    |
+| 9            | EUROPE        | 18877433    |
+| 9            | OCEANIA       | 372465518   |
+| 9            | SOUTH AMERICA | 34175583    |
+| 9            | USA           | 110532368   |
 
 **Answer:**
+
+See table for answer.
 
 ### 5. What is the total count of transactions for each platform?
 ___________________________________________________________________________________________________________________________
