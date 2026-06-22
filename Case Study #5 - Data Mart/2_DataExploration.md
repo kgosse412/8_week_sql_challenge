@@ -32,7 +32,6 @@ WITH date_fix AS (
   /* Fix the year to be a full 4 digits before converting to date format*/
   ,TO_DATE(LEFT(ws.week_date, LENGTH(ws.week_date) - 2) || '20' || RIGHT(ws.week_date, 2), 'DD-MM-YYYY') AS wk_date
   
-  
   FROM data_mart.weekly_sales AS ws
 ),
 clean_weekly_sales AS (
@@ -70,7 +69,6 @@ clean_weekly_sales AS (
   FROM date_fix AS df
 )
 
-
 SELECT
 DISTINCT TO_CHAR(cws.week_date, 'Day') AS day_of_week
 FROM clean_weekly_sales AS cws;	
@@ -95,8 +93,7 @@ WITH date_fix AS (
   ws.*
   /* Fix the year to be a full 4 digits before converting to date format*/
   ,TO_DATE(LEFT(ws.week_date, LENGTH(ws.week_date) - 2) || '20' || RIGHT(ws.week_date, 2), 'DD-MM-YYYY') AS wk_date
-  
-  
+   
   FROM data_mart.weekly_sales AS ws
 ),
 clean_weekly_sales AS (
@@ -138,7 +135,6 @@ generate_weeks AS (
   SELECT
   GENERATE_SERIES(1, 52) AS generated_week
 )
-
 
 SELECT
 ROW_NUMBER() OVER (ORDER BY gw.generated_week ASC) AS id
