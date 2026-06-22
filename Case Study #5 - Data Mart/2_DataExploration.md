@@ -80,6 +80,7 @@ FROM clean_weekly_sales AS cws;
 | Monday      |
 
 **Answer:**
+
 Monday is used as the first day of the week for each week_date value because EXTRACT('week' FROM <date>) uses ISO 8601. This is also confirmed by converting the week number to a day.
 
 ### 2. What range of week numbers are missing from the dataset?
@@ -182,6 +183,7 @@ cws.week_number IS NULL;
 | 28  | 52            |
 
 **Answer:**
+
 There are 28 missing weeks in the clean_weekly_sales dataset.
 
 ### 3. How many total transactions were there for each year in the dataset?
