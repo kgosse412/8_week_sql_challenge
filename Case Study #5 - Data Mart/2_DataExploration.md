@@ -746,9 +746,74 @@ See table for answer.
 ___________________________________________________________________________________________________________________________
 **SQL Statement:**
 	
-```sql	
+```sql
+/* Fix the date so it has a full 4 digit year for later conversion */
+WITH date_fix AS (
+  SELECT
+  ws.*
+  /* Fix the year to be a full 4 digits before converting to date format*/
+  ,TO_DATE(LEFT(ws.week_date, LENGTH(ws.week_date) - 2) || '20' || RIGHT(ws.week_date, 2), 'DD-MM-YYYY') AS wk_date
+  
+  FROM data_mart.weekly_sales AS ws
+),
+clean_weekly_sales AS (
+  SELECT
+  df.wk_date AS week_date
+  ,EXTRACT('week' FROM df.wk_date) AS week_number
+  ,EXTRACT('month' FROM df.wk_date) AS month_number
+  ,EXTRACT('year' FROM df.wk_date) AS calendar_year
+  ,df.region
+  ,df.platform
+  /* Change the null value in segment to unknown */
+  ,CASE
+  	WHEN df.segment = 'null' THEN 'unknown'
+  	ELSE df.segment
+  END AS segment
+  /* Create a new column from segment called age_band. Based only on the number from the segment column. */
+  ,CASE
+  	WHEN RIGHT(df.segment, 1) = '1' THEN 'Young Adults'
+    WHEN RIGHT(df.segment, 1) = '2' THEN 'Middle Aged'
+    WHEN RIGHT(df.segment, 1) = '3' OR RIGHT(df.segment, 1) = '4' THEN 'Retirees'
+  	ELSE 'unknown'
+  END AS age_band
+  /* Create a new column from segment called demographic. Based only on the letter from the segment column. */
+  ,CASE
+  	WHEN LEFT(df.segment, 1) = 'C' THEN 'Couples'
+    WHEN LEFT(df.segment, 1) = 'F' THEN 'Families'
+  	ELSE 'unknown'
+  END AS demographic
+  ,df.customer_type
+  ,df.transactions
+  ,df.sales
+  /* Create new column called avg_transactions using the sales and transactions columns. Round to 2 decimal places. */
+  ,ROUND(df.sales::numeric / df.transactions, 2) AS avg_transaction
+    
+  FROM date_fix AS df
+)
+
+SELECT
+cws.calendar_year
+,cws.platform
+,ROUND(SUM(cws.avg_transaction) / COUNT(cws.avg_transaction), 2) AS using_avg_transaction
+,ROUND(SUM(cws.sales::numeric) / SUM(cws.transactions), 2) AS using_sales_and_transactions_sums
+
+FROM clean_weekly_sales AS cws
+
+GROUP BY cws.calendar_year, cws.platform
+
+ORDER BY cws.calendar_year ASC, cws.platform ASC;
 ```
 
 **Table Output:**
+| calendar_year | platform | using_avg_transaction | using_sales_and_transactions_sums |
+| ------------- | -------- | --------------------- | --------------------------------- |
+| 2018          | Retail   | 42.91                 | 36.56                             |
+| 2018          | Shopify  | 188.28                | 192.48                            |
+| 2019          | Retail   | 41.97                 | 36.83                             |
+| 2019          | Shopify  | 177.56                | 183.36                            |
+| 2020          | Retail   | 40.64                 | 36.56                             |
+| 2020          | Shopify  | 174.87                | 179.03                            |
 
 **Answer:**
+
+Using avg_transaction doesn't give the exact average transaction size for each year by platform, so it is better to do it by taking the SUM of the sales and dividing by the SUM of the transactions and grouping that by calendar_year and platform. This provides a better output for the average transaction.
