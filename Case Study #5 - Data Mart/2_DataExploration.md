@@ -667,12 +667,80 @@ See table for answer.
 ___________________________________________________________________________________________________________________________
 **SQL Statement:**
 	
-```sql	
+```sql
+/* Fix the date so it has a full 4 digit year for later conversion */
+WITH date_fix AS (
+  SELECT
+  ws.*
+  /* Fix the year to be a full 4 digits before converting to date format*/
+  ,TO_DATE(LEFT(ws.week_date, LENGTH(ws.week_date) - 2) || '20' || RIGHT(ws.week_date, 2), 'DD-MM-YYYY') AS wk_date
+  
+  FROM data_mart.weekly_sales AS ws
+),
+clean_weekly_sales AS (
+  SELECT
+  df.wk_date AS week_date
+  ,EXTRACT('week' FROM df.wk_date) AS week_number
+  ,EXTRACT('month' FROM df.wk_date) AS month_number
+  ,EXTRACT('year' FROM df.wk_date) AS calendar_year
+  ,df.region
+  ,df.platform
+  /* Change the null value in segment to unknown */
+  ,CASE
+  	WHEN df.segment = 'null' THEN 'unknown'
+  	ELSE df.segment
+  END AS segment
+  /* Create a new column from segment called age_band. Based only on the number from the segment column. */
+  ,CASE
+  	WHEN RIGHT(df.segment, 1) = '1' THEN 'Young Adults'
+    WHEN RIGHT(df.segment, 1) = '2' THEN 'Middle Aged'
+    WHEN RIGHT(df.segment, 1) = '3' OR RIGHT(df.segment, 1) = '4' THEN 'Retirees'
+  	ELSE 'unknown'
+  END AS age_band
+  /* Create a new column from segment called demographic. Based only on the letter from the segment column. */
+  ,CASE
+  	WHEN LEFT(df.segment, 1) = 'C' THEN 'Couples'
+    WHEN LEFT(df.segment, 1) = 'F' THEN 'Families'
+  	ELSE 'unknown'
+  END AS demographic
+  ,df.customer_type
+  ,df.transactions
+  ,df.sales
+  /* Create new column called avg_transactions using the sales and transactions columns. Round to 2 decimal places. */
+  ,ROUND(df.sales::numeric / df.transactions, 2) AS avg_transaction
+    
+  FROM date_fix AS df
+)
+
+SELECT
+cws.age_band
+,cws.demographic
+,SUM(cws.sales) AS total_sales_retail
+
+FROM clean_weekly_sales AS cws
+
+WHERE
+cws.platform = 'Retail'
+
+GROUP BY cws.age_band, cws.demographic
+
+ORDER BY total_sales_retail DESC;	
 ```
 
 **Table Output:**
+| age_band     | demographic | total_sales_retail |
+| ------------ | ----------- | ------------------ |
+| unknown      | unknown     | 16067285533        |
+| Retirees     | Families    | 6634686916         |
+| Retirees     | Couples     | 6370580014         |
+| Middle Aged  | Families    | 4354091554         |
+| Young Adults | Couples     | 2602922797         |
+| Middle Aged  | Couples     | 1854160330         |
+| Young Adults | Families    | 1770889293         |
 
 **Answer:**
+
+See table for answer.
 
 ### 9. Can we use the avg_transaction column to find the average transaction size for each year for Retail vs Shopify? If not - how would you calculate it instead?
 ___________________________________________________________________________________________________________________________
