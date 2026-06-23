@@ -565,12 +565,103 @@ See table for answer.
 ___________________________________________________________________________________________________________________________
 **SQL Statement:**
 	
-```sql	
+```sql
+/* Fix the date so it has a full 4 digit year for later conversion */
+WITH date_fix AS (
+  SELECT
+  ws.*
+  /* Fix the year to be a full 4 digits before converting to date format*/
+  ,TO_DATE(LEFT(ws.week_date, LENGTH(ws.week_date) - 2) || '20' || RIGHT(ws.week_date, 2), 'DD-MM-YYYY') AS wk_date
+  
+  FROM data_mart.weekly_sales AS ws
+),
+clean_weekly_sales AS (
+  SELECT
+  df.wk_date AS week_date
+  ,EXTRACT('week' FROM df.wk_date) AS week_number
+  ,EXTRACT('month' FROM df.wk_date) AS month_number
+  ,EXTRACT('year' FROM df.wk_date) AS calendar_year
+  ,df.region
+  ,df.platform
+  /* Change the null value in segment to unknown */
+  ,CASE
+  	WHEN df.segment = 'null' THEN 'unknown'
+  	ELSE df.segment
+  END AS segment
+  /* Create a new column from segment called age_band. Based only on the number from the segment column. */
+  ,CASE
+  	WHEN RIGHT(df.segment, 1) = '1' THEN 'Young Adults'
+    WHEN RIGHT(df.segment, 1) = '2' THEN 'Middle Aged'
+    WHEN RIGHT(df.segment, 1) = '3' OR RIGHT(df.segment, 1) = '4' THEN 'Retirees'
+  	ELSE 'unknown'
+  END AS age_band
+  /* Create a new column from segment called demographic. Based only on the letter from the segment column. */
+  ,CASE
+  	WHEN LEFT(df.segment, 1) = 'C' THEN 'Couples'
+    WHEN LEFT(df.segment, 1) = 'F' THEN 'Families'
+  	ELSE 'unknown'
+  END AS demographic
+  ,df.customer_type
+  ,df.transactions
+  ,df.sales
+  /* Create new column called avg_transactions using the sales and transactions columns. Round to 2 decimal places. */
+  ,ROUND(df.sales::numeric / df.transactions, 2) AS avg_transaction
+    
+  FROM date_fix AS df
+),
+sales_sum AS (
+  SELECT
+  cws.demographic
+  ,cws.calendar_year
+  ,SUM(cws.sales) AS total_sales
+  
+  FROM clean_weekly_sales AS cws
+  
+  GROUP BY cws.demographic, cws.calendar_year
+  
+  ORDER BY cws.calendar_year ASC, cws.demographic ASC
+)
+
+SELECT
+ss.calendar_year
+/* 1. Get the sales of the designated demographic
+** 2. Divide by the sum of the total_sales of the three demographics by year
+** 3. Multiply by 100 to turn it into a percentage
+** 4. Round to the nearest 2 decimal places
+*/
+,ROUND(
+  MAX(CASE
+    WHEN ss.demographic = 'Couples' THEN ss.total_sales
+    ELSE 0
+  END) / SUM(ss.total_sales) * 100, 2) AS couples_percentage
+,ROUND(
+  MAX(CASE
+    WHEN ss.demographic = 'Families' THEN ss.total_sales
+    ELSE 0
+  END) / SUM(ss.total_sales) * 100, 2) AS families_percentage
+,ROUND(
+  MAX(CASE
+    WHEN ss.demographic = 'unknown' THEN ss.total_sales
+    ELSE 0
+  END) / SUM(ss.total_sales) * 100, 2) AS unknown_percentage
+
+FROM sales_sum AS ss
+
+GROUP BY ss.calendar_year
+
+ORDER BY ss.calendar_year ASC;	
 ```
 
 **Table Output:**
+| calendar_year | couples_percentage | families_percentage | unknown_percentage |
+| ------------- | ------------------ | ------------------- | ------------------ |
+| 2018          | 26.38              | 31.99               | 41.63              |
+| 2019          | 27.28              | 32.47               | 40.25              |
+| 2020          | 28.72              | 32.73               | 38.55              |
 
 **Answer:**
+
+See table for answer.
 
 ### 8. Which age_band and demographic values contribute the most to Retail sales?
 ___________________________________________________________________________________________________________________________
