@@ -1,10 +1,10 @@
-# Case Study #6 - CliqueBait
+# Case Study #6 - Clique Bait
 ## Table of Contents
 - [Overview](#Overview)
 - [Questions and Answers](#Questions-and-Answers)
 
 ## Overview
-All information related to this case study can be found at [Case Study #6 - CliqueBait](https://8weeksqlchallenge.com/case-study-6/).
+All information related to this case study can be found at [Case Study #6 - Clique Bait](https://8weeksqlchallenge.com/case-study-6/).
 
 All solutions used PostgreSQL v17.
 
