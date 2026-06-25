@@ -9,8 +9,8 @@
 ### --> customer_type
 ### Do you have any further recommendations for Danny’s team at Data Mart or any interesting insights based off this analysis?
 ___________________________________________________________________________________________________________________________
-#### Region Analysis
-
+#### ~~ Region Analysis ~~
+ 
 **SQL Statement:**
 	
 ```sql
@@ -129,9 +129,7 @@ ORDER BY percentage_rate ASC;
 | AFRICA        | -9146811   | -0.54           |
 | EUROPE        | 5152392    | 4.73            |
 
-**Answer:**
-
-#### Platform Analysis
+#### ~~ Platform Analysis ~~
 
 **SQL Statement:**
 	
@@ -246,9 +244,7 @@ ORDER BY percentage_rate ASC;
 | Retail   | -168083834 | -2.43           |
 | Shopify  | 15758440   | 7.18            |
 
-**Answer:**
-
-#### Age Band Analysis
+#### ~~ Age Band Analysis ~~
 
 **SQL Statement:**
 	
@@ -365,9 +361,7 @@ ORDER BY percentage_rate ASC;
 | Retirees     | -29549521  | -1.23           |
 | Young Adults | -7388560   | -0.92           |
 
-**Answer:**
-
-#### Demographic Analysis
+#### ~~ Demographic Analysis ~~
 
 **SQL Statement:**
 	
@@ -483,9 +477,7 @@ ORDER BY percentage_rate ASC;
 | Families    | -42320015  | -1.82           |
 | Couples     | -17612358  | -0.87           |
 
-**Answer:**
-
-#### Customer Type Analysis
+#### ~~ Customer Type Analysis ~~
 
 **SQL Statement:**
 	
@@ -601,4 +593,12 @@ ORDER BY percentage_rate ASC;
 | Existing      | -83872973  | -2.27           |
 | New           | 8750245    | 1.01            |
 
-**Answer:**
+#### ~~ Analysis ~~
+
+It appears that Guests have the highest negative impact on sales at a percentage rate of -3.0%, which is also showcased by the output of age_band and demographic, where both show uknown at -3.34%. To mitigate this, perhaps Danny should have an incentive to sign up for an account when purchasing items from the store.
+
+The data also shows that Retail has the highest negative impact on sales at a percentage rate of -2.43%. This could be due to people being impacted by the sustainable package changes more in person than when they order online but it's hard to say without knowing what sustainable package changes have been made (i.e. Did they get rid of plastic bagging? Is it a change in actual packaging of products? Etc.).
+
+Finally, we see that Asia has the highest negative impact on sales at a percentage rate of -3.26%. This could be due to the culture in Asia. Again, it's hard to say without knowing the sustainable package changes were.
+
+I believe we can evaulate this further if we understood more of what is meant by "sustainable package changes." For example, if the change was that plastic bagging was removed from retail stores, then we can address the issue with certain incentives like giving a discount when bringing your own bags or using paper bags instead of plastic.
