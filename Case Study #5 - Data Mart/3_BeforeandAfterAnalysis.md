@@ -66,9 +66,9 @@ clean_weekly_sales AS (
   FROM clean_weekly_sales AS cws
 
   WHERE
-  /* Filter week_date so it is 4 weeks before the given date and 4 weeks after. Remember that the given date is part of the after, so we only need an additional 3 weeks of data after the given date. */
+  /* Filter week_date so it is 4 weeks before the given date and 4 weeks after. */
   cws.week_date >= ('2020-06-15'::date - INTERVAL '4 weeks') AND
-  cws.week_date <= ('2020-06-15'::date + INTERVAL '3 weeks')
+  cws.week_date < ('2020-06-15'::date + INTERVAL '4 weeks')
 
   GROUP BY cws.week_date, cws.week_number
 
@@ -85,7 +85,7 @@ clean_weekly_sales AS (
   /* Add the total sales we calculated previously together IF we're looking at the after 4 weeks. This way we can get the after package sales amount. */
   ,SUM(
     CASE
-      WHEN ps.week_date >= '2020-06-15'::date AND ps.week_date <= ('2020-06-15'::date + INTERVAL '3 weeks') THEN ps.total_sales
+      WHEN ps.week_date >= '2020-06-15'::date AND ps.week_date < ('2020-06-15'::date + INTERVAL '4 weeks') THEN ps.total_sales
       ELSE 0
   END) AS after_pkg_sales
 
@@ -171,9 +171,9 @@ clean_weekly_sales AS (
   FROM clean_weekly_sales AS cws
 
   WHERE
-  /* Filter week_date so it is 12 weeks before the given date and 12 weeks after. Remember that the given date is part of the after, so we only need an additional 11 weeks of data after the given date. */
+  /* Filter week_date so it is 12 weeks before the given date and 12 weeks after. */
   cws.week_date >= ('2020-06-15'::date - INTERVAL '12 weeks') AND
-  cws.week_date <= ('2020-06-15'::date + INTERVAL '11 weeks')
+  cws.week_date < ('2020-06-15'::date + INTERVAL '12 weeks')
 
   GROUP BY cws.week_date, cws.week_number
 
@@ -181,16 +181,16 @@ clean_weekly_sales AS (
 )
 ,before_and_after_pkg_sales AS (
   SELECT
-  /* Add the total sales we calculated previously together IF we're looking at the previous 4 weeks. This way we can get the before package sales amount. */
+  /* Add the total sales we calculated previously together IF we're looking at the previous 12 weeks. This way we can get the before package sales amount. */
   SUM(
     CASE
       WHEN ps.week_date >= ('2020-06-15'::date - INTERVAL '12 weeks') AND ps.week_date < '2020-06-15'::date THEN ps.total_sales
       ELSE 0
   END) AS before_pkg_sales
-  /* Add the total sales we calculated previously together IF we're looking at the after 4 weeks. This way we can get the after package sales amount. */
+  /* Add the total sales we calculated previously together IF we're looking at the after 12 weeks. This way we can get the after package sales amount. */
   ,SUM(
     CASE
-      WHEN ps.week_date >= '2020-06-15'::date AND ps.week_date <= ('2020-06-15'::date + INTERVAL '11 weeks') THEN ps.total_sales
+      WHEN ps.week_date >= '2020-06-15'::date AND ps.week_date < ('2020-06-15'::date + INTERVAL '12 weeks') THEN ps.total_sales
       ELSE 0
   END) AS after_pkg_sales
 
@@ -220,11 +220,252 @@ There is a reduction rate of -152325394 with a percentage rate of -2.14%. It app
 
 ### 3. How do the sale metrics for these 2 periods before and after compare with the previous years in 2018 and 2019?
 ___________________________________________________________________________________________________________________________
+
+This is a two part question since we are looking at two different periods of time (4 weeks and 12 weeks).
+
+#### Part 1: 4 Weeks of Data
+
 **SQL Statement:**
 	
-```sql	
+```sql
+/* Fix the date so it has a full 4 digit year for later conversion */
+WITH date_fix AS (
+  SELECT
+  ws.*
+  /* Fix the year to be a full 4 digits before converting to date format*/
+  ,TO_DATE(LEFT(ws.week_date, LENGTH(ws.week_date) - 2) || '20' || RIGHT(ws.week_date, 2), 'DD-MM-YYYY') AS wk_date
+  
+  FROM data_mart.weekly_sales AS ws
+),
+clean_weekly_sales AS (
+  SELECT
+  df.wk_date AS week_date
+  ,EXTRACT('week' FROM df.wk_date) AS week_number
+  ,EXTRACT('month' FROM df.wk_date) AS month_number
+  ,EXTRACT('year' FROM df.wk_date) AS calendar_year
+  ,df.region
+  ,df.platform
+  /* Change the null value in segment to unknown */
+  ,CASE
+  	WHEN df.segment = 'null' THEN 'unknown'
+  	ELSE df.segment
+  END AS segment
+  /* Create a new column from segment called age_band. Based only on the number from the segment column. */
+  ,CASE
+  	WHEN RIGHT(df.segment, 1) = '1' THEN 'Young Adults'
+    WHEN RIGHT(df.segment, 1) = '2' THEN 'Middle Aged'
+    WHEN RIGHT(df.segment, 1) = '3' OR RIGHT(df.segment, 1) = '4' THEN 'Retirees'
+  	ELSE 'unknown'
+  END AS age_band
+  /* Create a new column from segment called demographic. Based only on the letter from the segment column. */
+  ,CASE
+  	WHEN LEFT(df.segment, 1) = 'C' THEN 'Couples'
+    WHEN LEFT(df.segment, 1) = 'F' THEN 'Families'
+  	ELSE 'unknown'
+  END AS demographic
+  ,df.customer_type
+  ,df.transactions
+  ,df.sales
+  /* Create new column called avg_transactions using the sales and transactions columns. Round to 2 decimal places. */
+  ,ROUND(df.sales::numeric / df.transactions, 2) AS avg_transaction
+    
+  FROM date_fix AS df
+)
+,pkg_sales AS (
+  SELECT
+  cws.week_date
+  ,cws.week_number
+  ,cws.calendar_year
+  /* Get the total sales by each week_date. */
+  ,SUM(cws.sales) AS total_sales
+
+  FROM clean_weekly_sales AS cws
+
+  WHERE
+  /* Filter week_date so it is 4 weeks before the given date and 4 weeks after. */
+  (cws.week_date >= ('2018-06-15'::date - INTERVAL '4 weeks') AND
+  cws.week_date < ('2018-06-15'::date + INTERVAL '4 weeks')) OR
+  (cws.week_date >= ('2019-06-15'::date - INTERVAL '4 weeks') AND
+  cws.week_date < ('2019-06-15'::date + INTERVAL '4 weeks')) OR  
+  (cws.week_date >= ('2020-06-15'::date - INTERVAL '4 weeks') AND
+  cws.week_date < ('2020-06-15'::date + INTERVAL '4 weeks'))
+  
+  GROUP BY cws.week_date, cws.week_number, cws.calendar_year
+
+  ORDER BY cws.week_date ASC
+)
+,before_and_after_pkg_sales AS (
+  SELECT
+  ps.calendar_year
+  /* Add the total sales we calculated previously together IF we're looking at the previous 4 weeks. This way we can get the before package sales amount. */
+  ,SUM(
+    CASE
+      WHEN 
+    	(ps.week_date >= ('2018-06-15'::date - INTERVAL '4 weeks') AND ps.week_date < '2018-06-15'::date) OR
+        (ps.week_date >= ('2019-06-15'::date - INTERVAL '4 weeks') AND ps.week_date < '2019-06-15'::date) OR
+        (ps.week_date >= ('2020-06-15'::date - INTERVAL '4 weeks') AND ps.week_date < '2020-06-15'::date)
+      THEN ps.total_sales
+      ELSE 0
+  END) AS before_pkg_sales
+  /* Add the total sales we calculated previously together IF we're looking at the after 4 weeks. This way we can get the after package sales amount. */
+  ,SUM(
+    CASE
+      WHEN
+        (ps.week_date >= '2018-06-15'::date AND ps.week_date < ('2018-06-15'::date + INTERVAL '4 weeks')) OR
+    	(ps.week_date >= '2019-06-15'::date AND ps.week_date < ('2019-06-15'::date + INTERVAL '4 weeks')) OR
+        (ps.week_date >= '2020-06-15'::date AND ps.week_date < ('2020-06-15'::date + INTERVAL '4 weeks'))
+      THEN ps.total_sales
+      ELSE 0
+  END) AS after_pkg_sales
+
+  FROM pkg_sales AS ps
+
+  GROUP BY ps.calendar_year
+)
+
+SELECT
+pkgs.*
+/* To get the value growth or reduction, we just subtract the before value from the after value. */
+,pkgs.after_pkg_sales - pkgs.before_pkg_sales AS value_rate
+/* To get the percentage growth or reduction, we want to take the value_rate (see above) and divide by the before package sales value. Multiply by 100 to get a percentage and round to 2 decimal places for cleanness. */
+,ROUND(
+  (pkgs.after_pkg_sales - pkgs.before_pkg_sales) / pkgs.before_pkg_sales * 100,
+  2) AS percentage_rate
+
+FROM before_and_after_pkg_sales AS pkgs;
 ```
 
 **Table Output:**
+| calendar_year | before_pkg_sales | after_pkg_sales | value_rate | percentage_rate |
+| ------------- | ---------------- | --------------- | ---------- | --------------- |
+| 2018          | 2125140809       | 2129242914      | 4102105    | 0.19            |
+| 2019          | 2249989796       | 2252326390      | 2336594    | 0.10            |
+| 2020          | 2345878357       | 2318994169      | -26884188  | -1.15           |
 
 **Answer:**
+
+There is a growth rate of 0.19% and 0.10% for 2018 and 2019 respectively, and a reduction rate of -1.15% for 2020. Overall, there is a decline trend through the years, but there is a steep drop between 2019 and 2020, indicating a possible issue (such as the new packaging) in 2020.
+
+#### Part 2: 12 Weeks of Data
+
+**SQL Statement:**
+	
+```sql
+/* Fix the date so it has a full 4 digit year for later conversion */
+WITH date_fix AS (
+  SELECT
+  ws.*
+  /* Fix the year to be a full 4 digits before converting to date format*/
+  ,TO_DATE(LEFT(ws.week_date, LENGTH(ws.week_date) - 2) || '20' || RIGHT(ws.week_date, 2), 'DD-MM-YYYY') AS wk_date
+  
+  FROM data_mart.weekly_sales AS ws
+),
+clean_weekly_sales AS (
+  SELECT
+  df.wk_date AS week_date
+  ,EXTRACT('week' FROM df.wk_date) AS week_number
+  ,EXTRACT('month' FROM df.wk_date) AS month_number
+  ,EXTRACT('year' FROM df.wk_date) AS calendar_year
+  ,df.region
+  ,df.platform
+  /* Change the null value in segment to unknown */
+  ,CASE
+  	WHEN df.segment = 'null' THEN 'unknown'
+  	ELSE df.segment
+  END AS segment
+  /* Create a new column from segment called age_band. Based only on the number from the segment column. */
+  ,CASE
+  	WHEN RIGHT(df.segment, 1) = '1' THEN 'Young Adults'
+    WHEN RIGHT(df.segment, 1) = '2' THEN 'Middle Aged'
+    WHEN RIGHT(df.segment, 1) = '3' OR RIGHT(df.segment, 1) = '4' THEN 'Retirees'
+  	ELSE 'unknown'
+  END AS age_band
+  /* Create a new column from segment called demographic. Based only on the letter from the segment column. */
+  ,CASE
+  	WHEN LEFT(df.segment, 1) = 'C' THEN 'Couples'
+    WHEN LEFT(df.segment, 1) = 'F' THEN 'Families'
+  	ELSE 'unknown'
+  END AS demographic
+  ,df.customer_type
+  ,df.transactions
+  ,df.sales
+  /* Create new column called avg_transactions using the sales and transactions columns. Round to 2 decimal places. */
+  ,ROUND(df.sales::numeric / df.transactions, 2) AS avg_transaction
+    
+  FROM date_fix AS df
+)
+,pkg_sales AS (
+  SELECT
+  cws.week_date
+  ,cws.week_number
+  ,cws.calendar_year
+  /* Get the total sales by each week_date. */
+  ,SUM(cws.sales) AS total_sales
+
+  FROM clean_weekly_sales AS cws
+
+  WHERE
+  /* Filter week_date so it is 12 weeks before the given date and 12 weeks after. */
+  (cws.week_date >= ('2018-06-15'::date - INTERVAL '12 weeks') AND
+  cws.week_date < ('2018-06-15'::date + INTERVAL '12 weeks')) OR
+  (cws.week_date >= ('2019-06-15'::date - INTERVAL '12 weeks') AND
+  cws.week_date < ('2019-06-15'::date + INTERVAL '12 weeks')) OR  
+  (cws.week_date >= ('2020-06-15'::date - INTERVAL '12 weeks') AND
+  cws.week_date < ('2020-06-15'::date + INTERVAL '12 weeks'))
+  
+  GROUP BY cws.week_date, cws.week_number, cws.calendar_year
+
+  ORDER BY cws.week_date ASC
+)
+,before_and_after_pkg_sales AS (
+  SELECT
+  ps.calendar_year
+  /* Add the total sales we calculated previously together IF we're looking at the previous 12 weeks. This way we can get the before package sales amount. */
+  ,SUM(
+    CASE
+      WHEN 
+    	(ps.week_date >= ('2018-06-15'::date - INTERVAL '12 weeks') AND ps.week_date < '2018-06-15'::date) OR
+        (ps.week_date >= ('2019-06-15'::date - INTERVAL '12 weeks') AND ps.week_date < '2019-06-15'::date) OR
+        (ps.week_date >= ('2020-06-15'::date - INTERVAL '12 weeks') AND ps.week_date < '2020-06-15'::date)
+      THEN ps.total_sales
+      ELSE 0
+  END) AS before_pkg_sales
+  /* Add the total sales we calculated previously together IF we're looking at the after 12 weeks. This way we can get the after package sales amount. */
+  ,SUM(
+    CASE
+      WHEN
+        (ps.week_date >= '2018-06-15'::date AND ps.week_date < ('2018-06-15'::date + INTERVAL '12 weeks')) OR
+    	(ps.week_date >= '2019-06-15'::date AND ps.week_date < ('2019-06-15'::date + INTERVAL '12 weeks')) OR
+        (ps.week_date >= '2020-06-15'::date AND ps.week_date < ('2020-06-15'::date + INTERVAL '12 weeks'))
+      THEN ps.total_sales
+      ELSE 0
+  END) AS after_pkg_sales
+
+  FROM pkg_sales AS ps
+
+  GROUP BY ps.calendar_year
+)
+
+SELECT
+pkgs.*
+/* To get the value growth or reduction, we just subtract the before value from the after value. */
+,pkgs.after_pkg_sales - pkgs.before_pkg_sales AS value_rate
+/* To get the percentage growth or reduction, we want to take the value_rate (see above) and divide by the before package sales value. Multiply by 100 to get a percentage and round to 2 decimal places for cleanness. */
+,ROUND(
+  (pkgs.after_pkg_sales - pkgs.before_pkg_sales) / pkgs.before_pkg_sales * 100,
+  2) AS percentage_rate
+
+FROM before_and_after_pkg_sales AS pkgs;
+```
+
+**Table Output:**
+| calendar_year | before_pkg_sales | after_pkg_sales | value_rate | percentage_rate |
+| ------------- | ---------------- | --------------- | ---------- | --------------- |
+| 2018          | 6396562317       | 6500818510      | 104256193  | 1.63            |
+| 2019          | 6883386397       | 6862646103      | -20740294  | -0.30           |
+| 2020          | 7126273147       | 6973947753      | -152325394 | -2.14           |
+
+
+**Answer:**
+
+Again, we see an overall decline over the years. To figure out why, we would want to evaluate the data in more depth, because it isn't just the packaging causing the issue. 
