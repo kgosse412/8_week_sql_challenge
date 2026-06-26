@@ -25,11 +25,20 @@ ________________________________________________________________________________
 **SQL Statement:**
 	
 ```sql
+SELECT
+COUNT(DISTINCT usrs.user_id) AS number_of_users
+
+FROM clique_bait.users AS usrs;
 ```
 
 **Table Output:**
+| number_of_users |
+| --------------- |
+| 500             |
 
 **Answer:**
+
+There are a total of 500 distinct users.
 
 ### 2. How many cookies does each user have on average?
 ___________________________________________________________________________________________________________________________
