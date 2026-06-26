@@ -45,11 +45,33 @@ ________________________________________________________________________________
 **SQL Statement:**
 	
 ```sql
+WITH count_of_cookies AS (
+  SELECT
+  DISTINCT usrs.user_id AS users
+  ,COUNT(cookie_id) AS cookie_cnt
+
+  FROM clique_bait.users AS usrs
+
+  GROUP BY users
+
+  ORDER BY users ASC
+)
+  
+SELECT
+/* Round the average cookie_cnt to 0 because you can't have part of a cookie. */
+ROUND(AVG(cookie_cnt), 0) AS avg_cookie_cnt
+  
+FROM count_of_cookies;
 ```
 
 **Table Output:**
+| avg_cookie_cnt |
+| -------------- |
+| 4              |
 
 **Answer:**
+
+Each person has an average of 4 cookies (if you round to 2 decimal places, you get 3.56).
 
 ### 3. What is the unique number of visits by all users per month?
 ___________________________________________________________________________________________________________________________
