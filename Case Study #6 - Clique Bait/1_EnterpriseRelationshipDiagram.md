@@ -1,7 +1,9 @@
 # Enterprise Relationship Diagram (ERD)
 ## Table of Contents
 
-[Enterprise Relationship Diagram](#enterprise-relationship-diagram)
+[Enterprise Relationship Diagram Image](#enterprise-relationship-diagram-image)
+
+[Enterprise Relationship Diagram Code](#enterprise-relationship-diagram-code)
 
 ## Enterprise Relationship Diagram Image
 ___________________________________________________________________________________________________________________________
@@ -46,7 +48,6 @@ Table clique_bait.events {
   sequence_number integer
   event_time timestamp
 }
-
 
 Ref: "clique_bait"."users"."cookie_id" < "clique_bait"."events"."cookie_id"
 
