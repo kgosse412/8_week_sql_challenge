@@ -137,11 +137,37 @@ ________________________________________________________________________________
 **SQL Statement:**
 	
 ```sql
+/* First, we need to find how many unique visits are Purchases. To do this, we COUNT the DISTINCT number of visit_id when an event_name is Purchase. This means we also need to join the event_identifier table to the events table so we know which one is the Purchase type. */
+WITH purchase_events AS (
+  SELECT
+  COUNT(DISTINCT e.visit_id) AS num_of_purchase_events
+  
+  FROM clique_bait.events AS e
+  LEFT JOIN clique_bait.event_identifier AS ei ON ei.event_type = e.event_type
+
+  WHERE
+  ei.event_name = 'Purchase'
+)
+
+/* Secondly, we need to figure out what percentage is for the number of purchase events is over the distinct number of events. To do this, we do a subquery where we select the value from num_of_purchase_events from the purchase_events CTE, then divide by the total distinct count of the visit_id. Multiply that by 100 to get the percentage and round to 2 decimal points for cleanness. */
+SELECT
+ROUND(
+  (SELECT pe.num_of_purchase_events
+  FROM purchase_events AS pe)::numeric / 
+  COUNT(DISTINCT e.visit_id) * 100,
+  2) AS purchase_percentage
+  
+FROM clique_bait.events AS e;
 ```
 
 **Table Output:**
+| purchase_percentage |
+| ------------------- |
+| 49.86               |
 
 **Answer:**
+
+The percentage of visits that have a purchase event is 49.86%.
 
 ### 6. What is the percentage of visits which view the checkout page but do not have a purchase event?
 ___________________________________________________________________________________________________________________________
