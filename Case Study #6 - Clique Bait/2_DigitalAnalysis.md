@@ -78,11 +78,30 @@ ________________________________________________________________________________
 **SQL Statement:**
 	
 ```sql
+SELECT
+EXTRACT('year' FROM event_time) AS year_number
+,EXTRACT('month' FROM event_time) AS month_number
+,COUNT(DISTINCT visit_id) AS cnt_of_visits
+  
+FROM clique_bait.events
+
+GROUP BY year_number, month_number
+
+ORDER BY year_number ASC, month_number ASC;
 ```
 
 **Table Output:**
+| year_number | month_number | cnt_of_visits |
+| ----------- | ------------ | ------------- |
+| 2020        | 1            | 876           |
+| 2020        | 2            | 1488          |
+| 2020        | 3            | 916           |
+| 2020        | 4            | 248           |
+| 2020        | 5            | 36            |
 
 **Answer:**
+
+See table for answer.
 
 ### 4. What is the number of events for each event type?
 ___________________________________________________________________________________________________________________________
