@@ -108,11 +108,29 @@ ________________________________________________________________________________
 **SQL Statement:**
 	
 ```sql
+SELECT
+event_type
+,COUNT(visit_id) AS num_of_events
+  
+FROM clique_bait.events
+
+GROUP BY event_type
+
+ORDER BY event_type ASC;
 ```
 
 **Table Output:**
+| event_type | num_of_events |
+| ---------- | ------------- |
+| 1          | 20928         |
+| 2          | 8451          |
+| 3          | 1777          |
+| 4          | 876           |
+| 5          | 702           |
 
 **Answer:**
+
+See table for answer.
 
 ### 5. What is the percentage of visits which have a purchase event?
 ___________________________________________________________________________________________________________________________
