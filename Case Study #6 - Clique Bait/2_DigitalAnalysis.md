@@ -171,14 +171,109 @@ The percentage of visits that have a purchase event is 49.86%.
 
 ### 6. What is the percentage of visits which view the checkout page but do not have a purchase event?
 ___________________________________________________________________________________________________________________________
+I actuall solved this two different ways. The second way is more efficient than the first but both will get you the same numbers.
+
+#### ~~ First Solution ~~
 **SQL Statement:**
 	
 ```sql
+/* First, we figure out the number of purchase_events there are. */
+WITH purchase_events AS (
+  SELECT
+  COUNT(DISTINCT e.visit_id) AS num_of_purchase_events
+  
+  FROM clique_bait.events AS e
+  LEFT JOIN clique_bait.event_identifier AS ei ON ei.event_type = e.event_type
+
+  WHERE
+  ei.event_name = 'Purchase'
+)
+
+/* Then we figure out how many checkout_events there are. */
+SELECT
+/* Will only look at checkout_events because of the WHERE clause. */
+COUNT(DISTINCT e.visit_id) AS checkout_events
+/* Pull in the purchase_events from the purchase_events table. */
+,(SELECT pe.num_of_purchase_events
+  FROM purchase_events AS pe) AS purchase_events
+,COUNT(DISTINCT e.visit_id) - 
+(SELECT pe.num_of_purchase_events
+  FROM purchase_events AS pe) AS checkout_only_events
+,ROUND(
+  (
+    COUNT(DISTINCT e.visit_id) - 
+    (SELECT pe.num_of_purchase_events
+ 	 FROM purchase_events AS pe)
+  )::numeric /
+  COUNT(DISTINCT e.visit_id) * 100,
+2) AS checkout_percentage
+  
+FROM clique_bait.events AS e
+LEFT JOIN clique_bait.page_hierarchy AS ph ON ph.page_id = e.page_id
+
+WHERE
+ph.page_name = 'Checkout'
 ```
 
 **Table Output:**
+| checkout_events | purchase_events | checkout_only_events | checkout_percentage |
+| --------------- | --------------- | -------------------- | ------------------- |
+| 2103            | 1777            | 326                  | 15.50               |
+
+#### ~~ Second Solution ~~
+**SQL Statement:**
+	
+```sql
+/* First, join the relevant tables and get the relevant info from each table. */
+WITH expanded_events AS (
+  SELECT
+  e.visit_id
+  ,e.page_id
+  ,ph.page_name
+  ,e.event_type
+  ,ei.event_name
+  
+  FROM clique_bait.events AS e
+  JOIN clique_bait.event_identifier AS ei ON ei.event_type = e.event_type
+  JOIN clique_bait.page_hierarchy AS ph ON ph.page_id = e.page_id
+)
+/* Second, we want to calculate how many times the checkout page is viewed and how many times a purchase was made. */
+,event_calc AS (
+  SELECT
+  SUM(CASE
+      WHEN ee.page_name = 'Checkout' THEN 1
+      ELSE 0
+  END) AS checkout_events
+  ,SUM(CASE
+      WHEN ee.event_name = 'Purchase' THEN 1
+      ELSE 0
+  END) AS purchase_events
+
+  FROM expanded_events AS ee
+)
+
+/* Finally, we want to use those values calcuated in event_calc to figure out two things;
+1. How many checkout only events were there
+2. What percentage of the checkout events were checkout only
+*/
+SELECT
+ec.*
+,ec.checkout_events - ec.purchase_events AS checkout_only_events
+,ROUND(
+  (ec.checkout_events - ec.purchase_events)::numeric / ec.checkout_events * 100,
+2) AS checkout_only_events_percentage
+
+FROM event_calc AS ec
+```
+
+**Table Output:**
+| checkout_events | purchase_events | checkout_only_events | checkout_only_events_percentage |
+| --------------- | --------------- | -------------------- | ------------------------------- |
+| 2103            | 1777            | 326                  | 15.50                           |
 
 **Answer:**
+
+Either solution gives a percentage of 15.50% where there are only 326 checkout only events.
 
 ### 7. What are the top 3 pages by number of views?
 ___________________________________________________________________________________________________________________________
