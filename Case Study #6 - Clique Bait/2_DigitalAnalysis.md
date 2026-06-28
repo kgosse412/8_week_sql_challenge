@@ -401,4 +401,5 @@ LIMIT 3;
 | Crab      | 719       |
 
 **Answer:**
+
 The top three products bought are Lobster, Oyster, and Crab.
