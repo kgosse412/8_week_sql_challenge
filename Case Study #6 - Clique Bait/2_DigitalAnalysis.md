@@ -314,11 +314,43 @@ ________________________________________________________________________________
 **SQL Statement:**
 	
 ```sql
+SELECT
+ph.product_category
+,SUM(
+  CASE
+  	WHEN ei.event_name = 'Page View' THEN 1
+    ELSE 0
+  END
+) AS page_views
+,SUM(
+  CASE
+  	WHEN ei.event_name = 'Add to Cart' THEN 1
+    ELSE 0
+  END
+) AS add_to_cart
+
+FROM clique_bait.events AS e
+JOIN clique_bait.page_hierarchy AS ph ON ph.page_id = e.page_id
+JOIN clique_bait.event_identifier AS ei ON ei.event_type = e.event_type
+
+WHERE
+ph.product_category IS NOT NULL
+
+GROUP BY ph.product_category
+
+ORDER BY ph.product_category ASC;
 ```
 
 **Table Output:**
+| product_category | page_views | add_to_cart |
+| ---------------- | ---------- | ----------- |
+| Fish             | 4633       | 2789        |
+| Luxury           | 3032       | 1870        |
+| Shellfish        | 6204       | 3792        |
 
 **Answer:**
+
+See table for answer.
 
 ### 9. What are the top 3 products by purchases?
 ___________________________________________________________________________________________________________________________
