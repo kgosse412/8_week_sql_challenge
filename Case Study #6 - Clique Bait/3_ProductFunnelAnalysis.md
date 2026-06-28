@@ -622,19 +622,235 @@ ________________________________________________________________________________
 **SQL Statement:**
 	
 ```sql
+/* Determine the number of times a Page View event has happened for each page_name. */
+WITH page_view_events AS (
+  SELECT
+  ph.page_name
+  ,SUM(
+    CASE
+  	  WHEN ei.event_name = 'Page View' THEN 1
+      ELSE 0
+    END
+  ) AS page_views
+  
+FROM clique_bait.events AS e
+JOIN clique_bait.event_identifier AS ei ON ei.event_type = e.event_type
+JOIN clique_bait.page_hierarchy AS ph ON ph.page_id = e.page_id
+
+WHERE
+ph.product_category IS NOT NULL
+
+GROUP BY ph.page_name
+),
+/* Determine the number of times an Add to Cart event happened for each page_name. */
+add_to_cart_events AS (
+  SELECT
+  ph.page_name
+  ,SUM(
+    CASE
+  	  WHEN ei.event_name = 'Add to Cart' THEN 1
+      ELSE 0
+    END
+  ) AS add_to_cart
+  
+  FROM clique_bait.events AS e
+  JOIN clique_bait.event_identifier AS ei ON ei.event_type = e.event_type
+  JOIN clique_bait.page_hierarchy AS ph ON ph.page_id = e.page_id
+
+  WHERE
+  ph.product_category IS NOT NULL
+
+  GROUP BY ph.page_name
+),
+/* Determine the total number of purchase events and the IDs associated to those purchase events. */
+purchase_events AS (
+  SELECT
+  e.visit_id
+  
+  FROM clique_bait.events AS e
+  JOIN clique_bait.event_identifier AS ei ON ei.event_type = e.event_type
+  
+  WHERE
+  ei.event_name = 'Purchase'
+),
+/* COUNT the visit_id as purchases but only when the visit_id is in the list of the purchase_events CTE AND when the event_name is Add to Cart. */
+purchases AS (
+  SELECT
+  ph.page_name
+  ,COUNT(e.visit_id) AS purchases
+
+  FROM clique_bait.events AS e
+  JOIN clique_bait.page_hierarchy AS ph ON ph.page_id = e.page_id
+  JOIN clique_bait.event_identifier AS ei ON ei.event_type = e.event_type
+
+  WHERE
+  /* This ensures we're only looking at the IDs that made purchases. */
+  e.visit_id IN (SELECT
+    		     visit_id
+  			     FROM purchase_events) AND
+  /* This ensures we're only looking at events where something was added to the cart. */
+  ei.event_name = 'Add to Cart'
+               
+  GROUP BY ph.page_name
+),
+/* Use the add_to_cart_events CTE to get the add_to_cart amount, and subtract the purchases from the purchases CTE from it to get how many times something was added to the cart but not purchased. */
+abandoned_events AS (
+  SELECT
+  ace.page_name
+  ,ace.add_to_cart - p.purchases AS abandoned
+  
+  FROM add_to_cart_events AS ace
+  JOIN purchases AS p ON p.page_name = ace.page_name
+)
+,product_numbers AS (
+  SELECT
+  pve.page_name
+  ,pve.page_views
+  ,ace.add_to_cart
+  ,ae.abandoned
+  ,p.purchases
+
+  FROM page_view_events AS pve
+  JOIN add_to_cart_events AS ace ON ace.page_name = pve.page_name
+  JOIN abandoned_events AS ae ON ae.page_name = pve.page_name
+  JOIN purchases AS p ON p.page_name = pve.page_name
+
+  ORDER BY pve.page_name
+)
+
+SELECT
+ROUND(
+  AVG(pn.add_to_cart::numeric / pn.page_views) * 100,
+  2
+) AS avg_page_views_to_cart_adds
+
+FROM product_numbers AS pn;
 ```
 
 **Table Output:**
+| avg_page_views_to_cart_adds |
+| --------------------------- |
+| 60.95                       |
 
 **Answer:**
+
+The average conversion rate from page views to cart adds is 60.95%.
 
 ### 5. What is the average conversion rate from cart add to purchase?
 ___________________________________________________________________________________________________________________________
 **SQL Statement:**
 	
 ```sql
+/* Determine the number of times a Page View event has happened for each page_name. */
+WITH page_view_events AS (
+  SELECT
+  ph.page_name
+  ,SUM(
+    CASE
+  	  WHEN ei.event_name = 'Page View' THEN 1
+      ELSE 0
+    END
+  ) AS page_views
+  
+FROM clique_bait.events AS e
+JOIN clique_bait.event_identifier AS ei ON ei.event_type = e.event_type
+JOIN clique_bait.page_hierarchy AS ph ON ph.page_id = e.page_id
+
+WHERE
+ph.product_category IS NOT NULL
+
+GROUP BY ph.page_name
+),
+/* Determine the number of times an Add to Cart event happened for each page_name. */
+add_to_cart_events AS (
+  SELECT
+  ph.page_name
+  ,SUM(
+    CASE
+  	  WHEN ei.event_name = 'Add to Cart' THEN 1
+      ELSE 0
+    END
+  ) AS add_to_cart
+  
+  FROM clique_bait.events AS e
+  JOIN clique_bait.event_identifier AS ei ON ei.event_type = e.event_type
+  JOIN clique_bait.page_hierarchy AS ph ON ph.page_id = e.page_id
+
+  WHERE
+  ph.product_category IS NOT NULL
+
+  GROUP BY ph.page_name
+),
+/* Determine the total number of purchase events and the IDs associated to those purchase events. */
+purchase_events AS (
+  SELECT
+  e.visit_id
+  
+  FROM clique_bait.events AS e
+  JOIN clique_bait.event_identifier AS ei ON ei.event_type = e.event_type
+  
+  WHERE
+  ei.event_name = 'Purchase'
+),
+/* COUNT the visit_id as purchases but only when the visit_id is in the list of the purchase_events CTE AND when the event_name is Add to Cart. */
+purchases AS (
+  SELECT
+  ph.page_name
+  ,COUNT(e.visit_id) AS purchases
+
+  FROM clique_bait.events AS e
+  JOIN clique_bait.page_hierarchy AS ph ON ph.page_id = e.page_id
+  JOIN clique_bait.event_identifier AS ei ON ei.event_type = e.event_type
+
+  WHERE
+  /* This ensures we're only looking at the IDs that made purchases. */
+  e.visit_id IN (SELECT
+    		     visit_id
+  			     FROM purchase_events) AND
+  /* This ensures we're only looking at events where something was added to the cart. */
+  ei.event_name = 'Add to Cart'
+               
+  GROUP BY ph.page_name
+),
+/* Use the add_to_cart_events CTE to get the add_to_cart amount, and subtract the purchases from the purchases CTE from it to get how many times something was added to the cart but not purchased. */
+abandoned_events AS (
+  SELECT
+  ace.page_name
+  ,ace.add_to_cart - p.purchases AS abandoned
+  
+  FROM add_to_cart_events AS ace
+  JOIN purchases AS p ON p.page_name = ace.page_name
+)
+,product_numbers AS (
+  SELECT
+  pve.page_name
+  ,pve.page_views
+  ,ace.add_to_cart
+  ,ae.abandoned
+  ,p.purchases
+
+  FROM page_view_events AS pve
+  JOIN add_to_cart_events AS ace ON ace.page_name = pve.page_name
+  JOIN abandoned_events AS ae ON ae.page_name = pve.page_name
+  JOIN purchases AS p ON p.page_name = pve.page_name
+
+  ORDER BY pve.page_name
+)
+
+SELECT
+ROUND(
+  AVG(pn.purchases::numeric / pn.add_to_cart) * 100,
+  2
+) AS avg_cart_adds_to_purchases
+
+FROM product_numbers AS pn;
 ```
 
 **Table Output:**
+| avg_cart_adds_to_purchases |
+| -------------------------- |
+| 75.93                      |
 
 **Answer:**
+
+The average conversion rate from cart adds to purchases is 75.93%.
