@@ -171,7 +171,7 @@ The percentage of visits that have a purchase event is 49.86%.
 
 ### 6. What is the percentage of visits which view the checkout page but do not have a purchase event?
 ___________________________________________________________________________________________________________________________
-I actuall solved this two different ways. The second way is more efficient than the first but both will get you the same numbers.
+I actually solved this two different ways. The second way is more efficient than the first but both will get you the same numbers.
 
 #### ~~ First Solution ~~
 **SQL Statement:**
@@ -280,11 +280,34 @@ ________________________________________________________________________________
 **SQL Statement:**
 	
 ```sql
+SELECT
+ph.page_name
+,COUNT(e.visit_id) AS page_visits
+
+FROM clique_bait.events AS e
+JOIN clique_bait.page_hierarchy AS ph ON ph.page_id = e.page_id
+JOIN clique_bait.event_identifier AS ei ON ei.event_type = e.event_type
+
+WHERE
+ei.event_name = 'Page View'
+
+GROUP BY ph.page_name
+
+ORDER BY page_visits DESC
+
+LIMIT 3;
 ```
 
 **Table Output:**
+| page_name    | page_visits |
+| ------------ | ----------- |
+| All Products | 3174        |
+| Checkout     | 2103        |
+| Home Page    | 1782        |
 
 **Answer:**
+
+The top three pages are All Products, Checkout, and Home Page, respectively.
 
 ### 8. What is the number of views and cart adds for each product category?
 ___________________________________________________________________________________________________________________________
