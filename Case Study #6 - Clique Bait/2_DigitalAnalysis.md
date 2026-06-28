@@ -357,8 +357,48 @@ ________________________________________________________________________________
 **SQL Statement:**
 	
 ```sql
+/* First, we want to know which IDs were involved in purchases, so we search for a list of visit_id where the event_name is Purchase. */
+WITH purchase_events AS (
+  SELECT
+  e.visit_id
+  
+  FROM clique_bait.events AS e
+  JOIN clique_bait.event_identifier AS ei ON ei.event_type = e.event_type
+  
+  WHERE
+  ei.event_name = 'Purchase'
+)
+
+/* Then we COUNT the visit_id as purchases but only when the visit_id is in the list of the purchase_events CTE AND when the event_name is Add to Cart. */
+SELECT
+ph.page_name
+,COUNT(e.visit_id) AS purchases
+
+FROM clique_bait.events AS e
+JOIN clique_bait.page_hierarchy AS ph ON ph.page_id = e.page_id
+JOIN clique_bait.event_identifier AS ei ON ei.event_type = e.event_type
+
+WHERE
+/* This ensures we're only looking at the IDs that made purchases. */
+e.visit_id IN (SELECT
+  			   visit_id
+  			   FROM purchase_events) AND
+/* This ensures we're only looking at events where something was added to the cart. */
+ei.event_name = 'Add to Cart'
+               
+GROUP BY ph.page_name
+
+ORDER BY purchases DESC
+
+LIMIT 3;
 ```
 
 **Table Output:**
+| page_name | purchases |
+| --------- | --------- |
+| Lobster   | 754       |
+| Oyster    | 726       |
+| Crab      | 719       |
 
 **Answer:**
+The top three products bought are Lobster, Oyster, and Crab.
