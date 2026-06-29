@@ -137,99 +137,7 @@ ORDER BY u.user_id ASC, visit_start_time ASC;
 | 5       | 4bffe1   | 2020-02-26 16:03:10.377881 | 8          | 1         | 0         | Half Off - Treat Your Shellf(ish) | 0           | 0     | Russian Caviar                                                                              |
 
 ## Insights Found
-### 1. Which campaign got the most sales?
-___________________________________________________________________________________________________________________________
-**SQL Statement:**
-	
-```sql
-/* Determine the total number of purchase events and the IDs associated to those purchase events. */
-WITH purchase_events AS (
-  SELECT
-  e.visit_id
-  
-  FROM clique_bait.events AS e
-  JOIN clique_bait.event_identifier AS ei ON ei.event_type = e.event_type
-  
-  WHERE
-  ei.event_name = 'Purchase'
-)
-,campaign_analysis_table AS (
-  SELECT
-  u.user_id
-  ,e.visit_id
-  ,MIN(e.event_time) AS visit_start_time
-  ,SUM(
-      CASE
-        WHEN ei.event_name = 'Page View' THEN 1
-        ELSE 0
-      END
-    ) AS page_views
-  ,SUM(
-      CASE
-        WHEN ei.event_name = 'Add to Cart' THEN 1
-        ELSE 0
-      END
-  ) AS cart_adds
-  ,MAX(
-    CASE
-      WHEN e.visit_id = pe.visit_id THEN 1
-      ELSE 0
-    END
-  ) AS purchases
-  ,ci.campaign_name
-  ,SUM(
-    CASE
-      WHEN ei.event_name = 'Ad Impression' THEN 1
-      ELSE 0
-    END
-  ) AS impressions
-  ,SUM(
-    CASE
-      WHEN ei.event_name = 'Ad Click' THEN 1
-      ELSE 0
-    END
-  ) AS click
-  ,STRING_AGG(ph.page_name, ', ' ORDER BY e.sequence_number ASC) 
-   FILTER (WHERE ph.product_category IS NOT NULL AND ei.event_name = 'Add to Cart')
-
-  FROM clique_bait.events AS e
-  JOIN clique_bait.users AS u ON u.cookie_id = e.cookie_id
-  JOIN clique_bait.event_identifier AS ei ON ei.event_type = e.event_type
-  JOIN clique_bait.page_hierarchy AS ph ON ph.page_id = e.page_id
-  LEFT JOIN purchase_events AS pe ON pe.visit_id = e.visit_id
-  LEFT JOIN clique_bait.campaign_identifier AS ci ON e.event_time BETWEEN ci.start_date AND ci.end_date
-
-  GROUP BY u.user_id, e.visit_id, ci.campaign_name
-
-  ORDER BY u.user_id ASC, visit_start_time ASC
-)
-
-SELECT
-cat.campaign_name
-,SUM(cat.purchases) AS total_purchases
-
-FROM campaign_analysis_table AS cat
-
-WHERE
-cat.campaign_name IS NOT NULL
-
-GROUP BY cat.campaign_name
-
-ORDER BY total_purchases DESC;
-```
-
-**Table Output:**
-| campaign_name                     | total_purchases |
-| --------------------------------- | --------------- |
-| Half Off - Treat Your Shellf(ish) | 1180            |
-| 25% Off - Living The Lux Life     | 202             |
-| BOGOF - Fishing For Compliments   | 127             |
-
-**Answer:**
-
-The Half Off - Treat Your Shellf(ish) campaign had the most sales by far at 1180 total purchases. The next campaign was 25% Off - Living The Lux Life at 202 total purchases and finally BOGOF - Fishing FOr Compliments at 127 total purchases. Perhaps this has to do with how long the campaigns lasted. The Half Off sale lasted 60 days while the 25% Off and BOGOF sales only lasted 14 days.
-
-### 2. How many sales did each campaign get on average daily during the campaign?
+### 1. Which campaign got the most sales? How many sales did each campaign get on average daily during the campaign?
 ___________________________________________________________________________________________________________________________
 **SQL Statement:**
 	
@@ -324,7 +232,113 @@ ORDER BY avg_purchases_per_day DESC;
 
 **Answer:**
 
-The Half Off - Treat Your Shellf(ish) campaign has an average of 20 purchases per day, beating the 25% Off - Living The Lux Life campaign by 6 purchases a day and the BOGOF - Fishing For Compliments campaign by 11 purchases a day. This shows the Half Off campaign is the most successful out of all 3 campaigns.
+The Half Off - Treat Your Shellf(ish) campaign had the most sales by far at 1180 total purchases with 20 sales per day. The next campaign was 25% Off - Living The Lux Life at 202 total purchases with 14 sales per day, and finally BOGOF - Fishing FOr Compliments at 127 total purchases with 9 sales per day.
+
+### 2. Which campaign sold the most items and how does it compare to no campaign?
+___________________________________________________________________________________________________________________________
+**SQL Statement:**
+	
+```sql
+/* Determine the total number of purchase events and the IDs associated to those purchase events. */
+WITH purchase_events AS (
+  SELECT
+  e.visit_id
+  
+  FROM clique_bait.events AS e
+  JOIN clique_bait.event_identifier AS ei ON ei.event_type = e.event_type
+  
+  WHERE
+  ei.event_name = 'Purchase'
+)
+,campaign_analysis_table AS (
+  SELECT
+  u.user_id
+  ,e.visit_id
+  ,MIN(e.event_time) AS visit_start_time
+  ,SUM(
+      CASE
+        WHEN ei.event_name = 'Page View' THEN 1
+        ELSE 0
+      END
+    ) AS page_views
+  ,SUM(
+      CASE
+        WHEN ei.event_name = 'Add to Cart' THEN 1
+        ELSE 0
+      END
+  ) AS cart_adds
+  ,MAX(
+    CASE
+      WHEN e.visit_id = pe.visit_id THEN 1
+      ELSE 0
+    END
+  ) AS purchases
+  ,ci.campaign_name
+  ,SUM(
+    CASE
+      WHEN ei.event_name = 'Ad Impression' THEN 1
+      ELSE 0
+    END
+  ) AS impressions
+  ,SUM(
+    CASE
+      WHEN ei.event_name = 'Ad Click' THEN 1
+      ELSE 0
+    END
+  ) AS click
+  ,STRING_AGG(ph.page_name, ', ' ORDER BY e.sequence_number ASC) 
+   FILTER (WHERE ph.product_category IS NOT NULL AND ei.event_name = 'Add to Cart')
+
+  FROM clique_bait.events AS e
+  JOIN clique_bait.users AS u ON u.cookie_id = e.cookie_id
+  JOIN clique_bait.event_identifier AS ei ON ei.event_type = e.event_type
+  JOIN clique_bait.page_hierarchy AS ph ON ph.page_id = e.page_id
+  LEFT JOIN purchase_events AS pe ON pe.visit_id = e.visit_id
+  LEFT JOIN clique_bait.campaign_identifier AS ci ON e.event_time BETWEEN ci.start_date AND ci.end_date
+
+  GROUP BY u.user_id, e.visit_id, ci.campaign_name
+
+  ORDER BY u.user_id ASC, visit_start_time ASC
+)
+
+SELECT
+cat.campaign_name
+,SUM(cat.cart_adds) AS items_added_to_carts
+,SUM(
+  CASE
+    WHEN cat.cart_adds > 0 AND cat.purchases = 1 THEN cat.cart_adds
+    ELSE 0
+  END
+) AS items_sold
+,ROUND(
+  SUM(
+    CASE
+      WHEN cat.cart_adds > 0 AND cat.purchases = 1 THEN cat.cart_adds
+      ELSE 0
+    END
+  ) / SUM(cat.cart_adds) * 100,
+  2
+) AS purchase_rate
+
+FROM campaign_analysis_table AS cat
+
+GROUP BY cat.campaign_name
+
+ORDER BY purchase_rate DESC;
+```
+
+**Table Output:**
+| campaign_name                     | items_add_to_carts | items_sold | purchase_rate |
+| --------------------------------- | ------------------ | ---------- | ------------- |
+| BOGOF - Fishing For Compliments   | 625                | 487        | 77.92         |
+| 25% Off - Living The Lux Life     | 991                | 765        | 77.19         |
+| Half Off - Treat Your Shellf(ish) | 5592               | 4230       | 75.64         |
+| NULL                              | 1243               | 935        | 75.22         |
+
+
+**Answer:**
+
+Half Off - Treat Your Shellf(ish) sold the most items with 4230 items sold but had the third highest purchase rate of 75.64%. Next is 25% Off - Living The Lux Life with 765 items sold and a purchase rate of 77.19%, and finally BOGOF - Fishing For Compliments with 487 items sold with a purchase rate of 77.92%. This shows that although Half Off - Treat Your Shellf(ish) sold the most items, it was actually the BOGOF - Fishing For Compliments campaign that had people buying the most of what was added to their carts. Comparitively, we see that when no campaign was going on, the purchase rate was at it's lowest at 75.22%, which is still comparable to the campaign purchase rates.
 
 ### 3. Does clicking on an impression lead to a higher purchase rates?
 ___________________________________________________________________________________________________________________________
@@ -435,6 +449,7 @@ ________________________________________________________________________________
 ```
 
 **Table Output:**
+
 
 **Answer:**
 
