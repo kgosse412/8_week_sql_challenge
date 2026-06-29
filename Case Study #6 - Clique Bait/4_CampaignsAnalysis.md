@@ -326,17 +326,105 @@ ORDER BY avg_purchases_per_day DESC;
 
 The Half Off - Treat Your Shellf(ish) campaign has an average of 20 purchases per day, beating the 25% Off - Living The Lux Life campaign by 6 purchases a day and the BOGOF - Fishing For Compliments campaign by 11 purchases a day. This shows the Half Off campaign is the most successful out of all 3 campaigns.
 
-### 3. 
+### 3. Does clicking on an impression lead to a higher purchase rates?
 ___________________________________________________________________________________________________________________________
 **SQL Statement:**
 	
 ```sql
+/* Determine the total number of purchase events and the IDs associated to those purchase events. */
+WITH purchase_events AS (
+  SELECT
+  e.visit_id
+  
+  FROM clique_bait.events AS e
+  JOIN clique_bait.event_identifier AS ei ON ei.event_type = e.event_type
+  
+  WHERE
+  ei.event_name = 'Purchase'
+)
+,campaign_analysis_table AS (
+  SELECT
+  u.user_id
+  ,e.visit_id
+  ,MIN(e.event_time) AS visit_start_time
+  ,SUM(
+      CASE
+        WHEN ei.event_name = 'Page View' THEN 1
+        ELSE 0
+      END
+    ) AS page_views
+  ,SUM(
+      CASE
+        WHEN ei.event_name = 'Add to Cart' THEN 1
+        ELSE 0
+      END
+  ) AS cart_adds
+  ,MAX(
+    CASE
+      WHEN e.visit_id = pe.visit_id THEN 1
+      ELSE 0
+    END
+  ) AS purchases
+  ,ci.campaign_name
+  ,SUM(
+    CASE
+      WHEN ei.event_name = 'Ad Impression' THEN 1
+      ELSE 0
+    END
+  ) AS impressions
+  ,SUM(
+    CASE
+      WHEN ei.event_name = 'Ad Click' THEN 1
+      ELSE 0
+    END
+  ) AS click
+  ,STRING_AGG(ph.page_name, ', ' ORDER BY e.sequence_number ASC) 
+   FILTER (WHERE ph.product_category IS NOT NULL AND ei.event_name = 'Add to Cart')
 
+  FROM clique_bait.events AS e
+  JOIN clique_bait.users AS u ON u.cookie_id = e.cookie_id
+  JOIN clique_bait.event_identifier AS ei ON ei.event_type = e.event_type
+  JOIN clique_bait.page_hierarchy AS ph ON ph.page_id = e.page_id
+  LEFT JOIN purchase_events AS pe ON pe.visit_id = e.visit_id
+  LEFT JOIN clique_bait.campaign_identifier AS ci ON e.event_time BETWEEN ci.start_date AND ci.end_date
+
+  GROUP BY u.user_id, e.visit_id, ci.campaign_name
+
+  ORDER BY u.user_id ASC, visit_start_time ASC
+)
+
+SELECT
+CASE
+  WHEN cat.impressions != 0 THEN 'Impression'
+  ELSE 'No Impression'
+END AS impression_occurred
+,SUM(
+  CASE
+  	WHEN cat.purchases = 1 THEN 1
+    ELSE 0
+  END
+) AS purchases
+,SUM(
+  CASE
+  	WHEN cat.purchases = 0 THEN 1
+    ELSE 0
+  END
+) AS no_purchases
+
+FROM campaign_analysis_table AS cat
+
+GROUP BY impression_occurred;
 ```
 
 **Table Output:**
+| impression_occurred | purchases | no_purchases |
+| ------------------- | --------- | ------------ |
+| Impression          | 737       | 139          |
+| No Impression       | 1040      | 1648         |
 
 **Answer:**
+
+It appears that impressions do impact purchase events. More people were more likely to purchase something when they had an impression than not purchase something when they had an impression. This can also be seen in reverse. More people were likely to NOT purchases something when an impression event did NOT occur.
 
 ### 4. 
 ___________________________________________________________________________________________________________________________
