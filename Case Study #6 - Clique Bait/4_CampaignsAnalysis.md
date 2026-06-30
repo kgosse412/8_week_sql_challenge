@@ -557,14 +557,103 @@ ORDER BY total_purchases DESC;
 
 Lobster was the most bought product during the Half Off - Treat Your Shellf(ish) campaign. Interestingly, Tuna was the least bought item during the Half Off - Treat Your Shellf(ish) campaign but was the most bought product for the other two campaigns.
 
-### 5. 
+### 5. Which product category was most likely to be bought and during which campaign was it bought the most?
 ___________________________________________________________________________________________________________________________
 **SQL Statement:**
 	
 ```sql
+/* Determine the total number of purchase events and the IDs associated to those purchase events. */
+WITH purchase_events AS (
+  SELECT
+  e.visit_id
+  
+  FROM clique_bait.events AS e
+  JOIN clique_bait.event_identifier AS ei ON ei.event_type = e.event_type
+  
+  WHERE
+  ei.event_name = 'Purchase'
+)
+,campaign_analysis_table AS (
+  SELECT
+  u.user_id
+  ,e.visit_id
+  ,MIN(e.event_time) AS visit_start_time
+  ,SUM(
+      CASE
+        WHEN ei.event_name = 'Page View' THEN 1
+        ELSE 0
+      END
+    ) AS page_views
+  ,SUM(
+      CASE
+        WHEN ei.event_name = 'Add to Cart' THEN 1
+        ELSE 0
+      END
+  ) AS cart_adds
+  ,MAX(
+    CASE
+      WHEN e.visit_id = pe.visit_id THEN 1
+      ELSE 0
+    END
+  ) AS purchases
+  ,ci.campaign_name
+  ,SUM(
+    CASE
+      WHEN ei.event_name = 'Ad Impression' THEN 1
+      ELSE 0
+    END
+  ) AS impressions
+  ,SUM(
+    CASE
+      WHEN ei.event_name = 'Ad Click' THEN 1
+      ELSE 0
+    END
+  ) AS click
+  ,STRING_AGG(ph.page_name, ', ' ORDER BY e.sequence_number ASC) 
+   FILTER (WHERE ph.product_category IS NOT NULL AND ei.event_name = 'Add to Cart') AS cart_products
+  ,STRING_AGG(ph.product_category, ', ' ORDER BY e.sequence_number ASC) 
+   FILTER (WHERE ph.product_category IS NOT NULL AND ei.event_name = 'Add to Cart') AS cart_product_category
 
+  FROM clique_bait.events AS e
+  JOIN clique_bait.users AS u ON u.cookie_id = e.cookie_id
+  JOIN clique_bait.event_identifier AS ei ON ei.event_type = e.event_type
+  JOIN clique_bait.page_hierarchy AS ph ON ph.page_id = e.page_id
+  LEFT JOIN purchase_events AS pe ON pe.visit_id = e.visit_id
+  LEFT JOIN clique_bait.campaign_identifier AS ci ON e.event_time BETWEEN ci.start_date AND ci.end_date
+  
+  GROUP BY u.user_id, e.visit_id, ci.campaign_name
+
+  ORDER BY u.user_id ASC, visit_start_time ASC
+)
+
+SELECT
+cat.campaign_name
+,UNNEST(STRING_TO_ARRAY(cat.cart_product_category, ', ')) AS product_category
+,SUM(cat.purchases) AS total_purchases
+
+FROM campaign_analysis_table AS cat 
+
+WHERE
+cat.campaign_name IS NOT NULL
+
+GROUP BY cat.campaign_name, product_category
+
+ORDER BY total_purchases DESC;
 ```
 
 **Table Output:**
+| campaign_name                     | product_category | total_purchases |
+| --------------------------------- | ---------------- | --------------- |
+| Half Off - Treat Your Shellf(ish) | Shellfish        | 1920            |
+| Half Off - Treat Your Shellf(ish) | Fish             | 1365            |
+| Half Off - Treat Your Shellf(ish) | Luxury           | 945             |
+| 25% Off - Living The Lux Life     | Shellfish        | 345             |
+| 25% Off - Living The Lux Life     | Fish             | 256             |
+| BOGOF - Fishing For Compliments   | Shellfish        | 213             |
+| BOGOF - Fishing For Compliments   | Fish             | 175             |
+| 25% Off - Living The Lux Life     | Luxury           | 164             |
+| BOGOF - Fishing For Compliments   | Luxury           | 99              |
 
 **Answer:**
+
+For this answer, I added another column to our campaign_analysis_table called cart_product_category. It shows us that Shellfish was the most bought item with 1920 total purchases during the Half Off - Treat Your Shellf(ish) campaign. It looks like Shellfish was the most bought item during the other two campaigns as well.
