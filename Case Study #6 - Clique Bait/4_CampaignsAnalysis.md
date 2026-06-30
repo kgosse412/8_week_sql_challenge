@@ -445,33 +445,117 @@ ________________________________________________________________________________
 **SQL Statement:**
 	
 ```sql
-SELECT
-ph.page_name AS product
+/* Determine the total number of purchase events and the IDs associated to those purchase events. */
+WITH purchase_events AS (
+  SELECT
+  e.visit_id
+  
+  FROM clique_bait.events AS e
+  JOIN clique_bait.event_identifier AS ei ON ei.event_type = e.event_type
+  
+  WHERE
+  ei.event_name = 'Purchase'
+)
+,campaign_analysis_table AS (
+  SELECT
+  u.user_id
+  ,e.visit_id
+  ,MIN(e.event_time) AS visit_start_time
+  ,SUM(
+      CASE
+        WHEN ei.event_name = 'Page View' THEN 1
+        ELSE 0
+      END
+    ) AS page_views
+  ,SUM(
+      CASE
+        WHEN ei.event_name = 'Add to Cart' THEN 1
+        ELSE 0
+      END
+  ) AS cart_adds
+  ,MAX(
+    CASE
+      WHEN e.visit_id = pe.visit_id THEN 1
+      ELSE 0
+    END
+  ) AS purchases
+  ,ci.campaign_name
+  ,SUM(
+    CASE
+      WHEN ei.event_name = 'Ad Impression' THEN 1
+      ELSE 0
+    END
+  ) AS impressions
+  ,SUM(
+    CASE
+      WHEN ei.event_name = 'Ad Click' THEN 1
+      ELSE 0
+    END
+  ) AS click
+  ,STRING_AGG(ph.page_name, ', ' ORDER BY e.sequence_number ASC) 
+   FILTER (WHERE ph.product_category IS NOT NULL AND ei.event_name = 'Add to Cart') AS cart_products
 
-FROM clique_bait.page_hierarchy AS ph
+  FROM clique_bait.events AS e
+  JOIN clique_bait.users AS u ON u.cookie_id = e.cookie_id
+  JOIN clique_bait.event_identifier AS ei ON ei.event_type = e.event_type
+  JOIN clique_bait.page_hierarchy AS ph ON ph.page_id = e.page_id
+  LEFT JOIN purchase_events AS pe ON pe.visit_id = e.visit_id
+  LEFT JOIN clique_bait.campaign_identifier AS ci ON e.event_time BETWEEN ci.start_date AND ci.end_date
+  
+  GROUP BY u.user_id, e.visit_id, ci.campaign_name
+
+  ORDER BY u.user_id ASC, visit_start_time ASC
+)
+
+SELECT
+cat.campaign_name
+,UNNEST(STRING_TO_ARRAY(cat.cart_products, ', ')) AS product
+,SUM(cat.purchases) AS total_purchases
+
+FROM campaign_analysis_table AS cat
 
 WHERE
-ph.page_name IN (
-  SELECT cat.cart_products
-  FROM campaign_analysis_table AS cat
-)
+cat.campaign_name IS NOT NULL
+
+GROUP BY cat.campaign_name, product
+
+ORDER BY total_purchases DESC;
 ```
 
 **Table Output:**
-| user_id | visit_id | visit_start_time           | page_views | cart_adds | purchases | campaign_name                     | impressions | click | cart_products                                                                         |
-| ------- | -------- | -------------------------- | ---------- | --------- | --------- | --------------------------------- | ----------- | ----- | ------------------------------------------------------------------------------------- |
-| 1       | 0fc437   | 2020-02-04 17:49:49.602976 | 10         | 6         | 1         | Half Off - Treat Your Shellf(ish) | 1           | 1     | Tuna, Russian Caviar, Black Truffle, Abalone, Crab, Oyster                            |
-| 1       | ccf365   | 2020-02-04 19:16:09.182546 | 7          | 3         | 1         | Half Off - Treat Your Shellf(ish) | 0           | 0     | Lobster, Crab, Oyster                                                                 |
-| 1       | f7c798   | 2020-03-15 02:23:26.312543 | 9          | 3         | 1         | Half Off - Treat Your Shellf(ish) | 0           | 0     | Russian Caviar, Crab, Oyster                                                          |
-| 1       | 30b94d   | 2020-03-15 13:12:54.023936 | 9          | 7         | 1         | Half Off - Treat Your Shellf(ish) | 1           | 1     | Salmon, Kingfish, Tuna, Russian Caviar, Abalone, Lobster, Crab                        |
-| 1       | eaffde   | 2020-03-25 20:06:32.342989 | 10         | 8         | 1         | Half Off - Treat Your Shellf(ish) | 1           | 1     | Salmon, Tuna, Russian Caviar, Black Truffle, Abalone, Lobster, Crab, Oyster           |
-| 2       | 3b5871   | 2020-01-18 10:16:32.158475 | 9          | 6         | 1         | 25% Off - Living The Lux Life     | 1           | 1     | Salmon, Kingfish, Russian Caviar, Black Truffle, Lobster, Oyster                      |
-| 2       | e26a84   | 2020-01-18 16:06:40.90728  | 6          | 2         | 1         | 25% Off - Living The Lux Life     | 0           | 0     | Salmon, Oyster                                                                        |
-| 2       | 49d73d   | 2020-02-16 06:21:27.138532 | 11         | 9         | 1         | Half Off - Treat Your Shellf(ish) | 1           | 1     | Salmon, Kingfish, Tuna, Russian Caviar, Black Truffle, Abalone, Lobster, Crab, Oyster |
-| 2       | 0635fb   | 2020-02-16 06:42:42.73573  | 9          | 4         | 1         | Half Off - Treat Your Shellf(ish) | 0           | 0     | Salmon, Kingfish, Abalone, Crab                                                       |
-
+| campaign_name                     | product        | total_purchases |
+| --------------------------------- | -------------- | --------------- |
+| Half Off - Treat Your Shellf(ish) | Lobster        | 507             |
+| Half Off - Treat Your Shellf(ish) | Crab           | 483             |
+| Half Off - Treat Your Shellf(ish) | Black Truffle  | 473             |
+| Half Off - Treat Your Shellf(ish) | Russian Caviar | 472             |
+| Half Off - Treat Your Shellf(ish) | Oyster         | 470             |
+| Half Off - Treat Your Shellf(ish) | Kingfish       | 463             |
+| Half Off - Treat Your Shellf(ish) | Abalone        | 460             |
+| Half Off - Treat Your Shellf(ish) | Salmon         | 458             |
+| Half Off - Treat Your Shellf(ish) | Tuna           | 444             |
+| 25% Off - Living The Lux Life     | Tuna           | 90              |
+| 25% Off - Living The Lux Life     | Oyster         | 89              |
+| 25% Off - Living The Lux Life     | Lobster        | 89              |
+| 25% Off - Living The Lux Life     | Russian Caviar | 86              |
+| 25% Off - Living The Lux Life     | Kingfish       | 85              |
+| 25% Off - Living The Lux Life     | Crab           | 85              |
+| 25% Off - Living The Lux Life     | Abalone        | 82              |
+| 25% Off - Living The Lux Life     | Salmon         | 81              |
+| 25% Off - Living The Lux Life     | Black Truffle  | 78              |
+| BOGOF - Fishing For Compliments   | Tuna           | 60              |
+| BOGOF - Fishing For Compliments   | Kingfish       | 58              |
+| BOGOF - Fishing For Compliments   | Salmon         | 57              |
+| BOGOF - Fishing For Compliments   | Oyster         | 57              |
+| BOGOF - Fishing For Compliments   | Abalone        | 55              |
+| BOGOF - Fishing For Compliments   | Crab           | 51              |
+| BOGOF - Fishing For Compliments   | Russian Caviar | 50              |
+| BOGOF - Fishing For Compliments   | Lobster        | 50              |
+| BOGOF - Fishing For Compliments   | Black Truffle  | 49              |
 
 **Answer:**
+
+Lobster was the most bought product during the Half Off - Treat Your Shellf(ish) campaign. Interestingly, Tuna was the least bought item during the Half Off - Treat Your Shellf(ish) campaign but was the most bought product for the other two campaigns.
 
 ### 5. 
 ___________________________________________________________________________________________________________________________
