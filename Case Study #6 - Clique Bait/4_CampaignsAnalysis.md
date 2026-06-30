@@ -78,7 +78,7 @@ u.user_id
   END
 ) AS click
 ,STRING_AGG(ph.page_name, ', ' ORDER BY e.sequence_number ASC) 
- FILTER (WHERE ph.product_category IS NOT NULL AND ei.event_name = 'Add to Cart')
+ FILTER (WHERE ph.product_category IS NOT NULL AND ei.event_name = 'Add to Cart') AS cart_products
 
 FROM clique_bait.events AS e
 JOIN clique_bait.users AS u ON u.cookie_id = e.cookie_id
@@ -97,7 +97,7 @@ ORDER BY u.user_id ASC, visit_start_time ASC;
 ```
 
 **Table Output:**
-| user_id | visit_id | visit_start_time           | page_views | cart_adds | purchases | campaign_name                     | impressions | click | string_agg                                                                            |
+| user_id | visit_id | visit_start_time           | page_views | cart_adds | purchases | campaign_name                     | impressions | click | cart_products                                                                            |
 | ------- | -------- | -------------------------- | ---------- | --------- | --------- | --------------------------------- | ----------- | ----- | ------------------------------------------------------------------------------------- |
 | 1       | 0fc437   | 2020-02-04 17:49:49.602976 | 10         | 6         | 1         | Half Off - Treat Your Shellf(ish) | 1           | 1     | Tuna, Russian Caviar, Black Truffle, Abalone, Crab, Oyster                            |
 | 1       | ccf365   | 2020-02-04 19:16:09.182546 | 7          | 3         | 1         | Half Off - Treat Your Shellf(ish) | 0           | 0     | Lobster, Crab, Oyster                                                                 |
@@ -190,7 +190,7 @@ WITH purchase_events AS (
     END
   ) AS click
   ,STRING_AGG(ph.page_name, ', ' ORDER BY e.sequence_number ASC) 
-   FILTER (WHERE ph.product_category IS NOT NULL AND ei.event_name = 'Add to Cart')
+   FILTER (WHERE ph.product_category IS NOT NULL AND ei.event_name = 'Add to Cart')  AS cart_products
 
   FROM clique_bait.events AS e
   JOIN clique_bait.users AS u ON u.cookie_id = e.cookie_id
@@ -287,7 +287,7 @@ WITH purchase_events AS (
     END
   ) AS click
   ,STRING_AGG(ph.page_name, ', ' ORDER BY e.sequence_number ASC) 
-   FILTER (WHERE ph.product_category IS NOT NULL AND ei.event_name = 'Add to Cart')
+   FILTER (WHERE ph.product_category IS NOT NULL AND ei.event_name = 'Add to Cart')  AS cart_products
 
   FROM clique_bait.events AS e
   JOIN clique_bait.users AS u ON u.cookie_id = e.cookie_id
@@ -393,7 +393,7 @@ WITH purchase_events AS (
     END
   ) AS click
   ,STRING_AGG(ph.page_name, ', ' ORDER BY e.sequence_number ASC) 
-   FILTER (WHERE ph.product_category IS NOT NULL AND ei.event_name = 'Add to Cart')
+   FILTER (WHERE ph.product_category IS NOT NULL AND ei.event_name = 'Add to Cart')  AS cart_products
 
   FROM clique_bait.events AS e
   JOIN clique_bait.users AS u ON u.cookie_id = e.cookie_id
@@ -440,15 +440,35 @@ GROUP BY impression_occurred;
 
 It appears that impressions do impact purchase events. More people were more likely to purchase something when they had an impression than not purchase something when they had an impression. This can also be seen in reverse. More people were likely to NOT purchases something when an impression event did NOT occur.
 
-### 4. 
+### 4. Which product was most likely to be bought and during which campaign was it bought the most?
 ___________________________________________________________________________________________________________________________
 **SQL Statement:**
 	
 ```sql
+SELECT
+ph.page_name AS product
 
+FROM clique_bait.page_hierarchy AS ph
+
+WHERE
+ph.page_name IN (
+  SELECT cat.cart_products
+  FROM campaign_analysis_table AS cat
+)
 ```
 
 **Table Output:**
+| user_id | visit_id | visit_start_time           | page_views | cart_adds | purchases | campaign_name                     | impressions | click | cart_products                                                                         |
+| ------- | -------- | -------------------------- | ---------- | --------- | --------- | --------------------------------- | ----------- | ----- | ------------------------------------------------------------------------------------- |
+| 1       | 0fc437   | 2020-02-04 17:49:49.602976 | 10         | 6         | 1         | Half Off - Treat Your Shellf(ish) | 1           | 1     | Tuna, Russian Caviar, Black Truffle, Abalone, Crab, Oyster                            |
+| 1       | ccf365   | 2020-02-04 19:16:09.182546 | 7          | 3         | 1         | Half Off - Treat Your Shellf(ish) | 0           | 0     | Lobster, Crab, Oyster                                                                 |
+| 1       | f7c798   | 2020-03-15 02:23:26.312543 | 9          | 3         | 1         | Half Off - Treat Your Shellf(ish) | 0           | 0     | Russian Caviar, Crab, Oyster                                                          |
+| 1       | 30b94d   | 2020-03-15 13:12:54.023936 | 9          | 7         | 1         | Half Off - Treat Your Shellf(ish) | 1           | 1     | Salmon, Kingfish, Tuna, Russian Caviar, Abalone, Lobster, Crab                        |
+| 1       | eaffde   | 2020-03-25 20:06:32.342989 | 10         | 8         | 1         | Half Off - Treat Your Shellf(ish) | 1           | 1     | Salmon, Tuna, Russian Caviar, Black Truffle, Abalone, Lobster, Crab, Oyster           |
+| 2       | 3b5871   | 2020-01-18 10:16:32.158475 | 9          | 6         | 1         | 25% Off - Living The Lux Life     | 1           | 1     | Salmon, Kingfish, Russian Caviar, Black Truffle, Lobster, Oyster                      |
+| 2       | e26a84   | 2020-01-18 16:06:40.90728  | 6          | 2         | 1         | 25% Off - Living The Lux Life     | 0           | 0     | Salmon, Oyster                                                                        |
+| 2       | 49d73d   | 2020-02-16 06:21:27.138532 | 11         | 9         | 1         | Half Off - Treat Your Shellf(ish) | 1           | 1     | Salmon, Kingfish, Tuna, Russian Caviar, Black Truffle, Abalone, Lobster, Crab, Oyster |
+| 2       | 0635fb   | 2020-02-16 06:42:42.73573  | 9          | 4         | 1         | Half Off - Treat Your Shellf(ish) | 0           | 0     | Salmon, Kingfish, Abalone, Crab                                                       |
 
 
 **Answer:**
