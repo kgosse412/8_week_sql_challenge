@@ -656,4 +656,4 @@ ORDER BY total_purchases DESC;
 
 **Answer:**
 
-For this answer, I added another column to our campaign_analysis_table called cart_product_category. It shows us that Shellfish was the most bought item with 1920 total purchases during the Half Off - Treat Your Shellf(ish) campaign. It looks like Shellfish was the most bought item during the other two campaigns as well.
+For this answer, I added another column to our campaign_analysis_table called cart_product_category. It shows us that Shellfish was the most bought item with 1920 total purchases during the Half Off - Treat Your Shellf(ish) campaign. It looks like Shellfish was the most bought item during the other two campaigns as well. It also appears that Luxury products were the least bought during all three campaigns.
