@@ -69,22 +69,67 @@ ________________________________________________________________________________
 **SQL Statement:**
 	
 ```sql
+WITH txn_revenue AS (
+  SELECT
+  sales.txn_id
+  ,ROUND(
+    SUM(sales.price * (1 - sales.discount / 100) * sales.qty),
+    2
+  ) AS revenue
+
+  FROM balanced_tree.sales AS sales
+  
+  GROUP BY sales.txn_id
+)
+
+SELECT
+percentile_cont(.25) WITHIN GROUP (ORDER BY rev.revenue) AS percentile_25
+,percentile_cont(.5) WITHIN GROUP (ORDER BY rev.revenue) AS median
+,percentile_cont(.75) WITHIN GROUP (ORDER BY rev.revenue) AS percentile_75
+
+FROM txn_revenue AS rev;
 ```
 
 **Table Output:**
+| percentile_25 | median | percentile_75 |
+| ------------- | ------ | ------------- |
+| 375.75        | 509.5  | 647           |
 
 **Answer:**
+
+See table for answer.
 
 ### 4. What is the average discount value per transaction?
 ___________________________________________________________________________________________________________________________
 **SQL Statement:**
 	
 ```sql
+WITH txn_data AS (
+  SELECT
+  sales.txn_id
+  ,ROUND(
+    SUM(sales.price * (sales.discount::numeric / 100) * sales.qty),
+    2
+  ) AS total_discount
+
+  FROM balanced_tree.sales AS sales
+  
+  GROUP BY sales.txn_id
+)
+
+SELECT
+ROUND(AVG(txn_data.total_discount), 2) AS avg_discount_per_txn
+
+FROM txn_data;
 ```
 
 **Table Output:**
+| avg_discount_per_txn |
+| -------------------- |
+| 62.49                |
 
 **Answer:**
+$62.49 is the average discount per transaction.
 
 ### 5. What is the percentage split of all transactions for members vs non-members?
 ___________________________________________________________________________________________________________________________
