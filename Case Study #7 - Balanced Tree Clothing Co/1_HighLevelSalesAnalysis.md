@@ -16,7 +16,7 @@ ________________________________________________________________________________
 SELECT
 SUM(sales.qty)
 
-FROM balanced_tree.sales AS sales
+FROM balanced_tree.sales AS sales;
 ```
 
 **Table Output:**
@@ -36,7 +36,7 @@ ________________________________________________________________________________
 SELECT
 SUM(sales.qty * sales.price) total_revenue
 
-FROM balanced_tree.sales AS sales
+FROM balanced_tree.sales AS sales;
 ```
 
 **Table Output:**
@@ -59,7 +59,7 @@ ROUND(
   2
 ) total_discount
 
-FROM balanced_tree.sales AS sales
+FROM balanced_tree.sales AS sales;
 ```
 
 **Table Output:**
