@@ -22,7 +22,7 @@ ________________________________________________________________________________
 SELECT
 COUNT(DISTINCT sales.txn_id) AS txn_count
 
-FROM balanced_tree.sales AS sales
+FROM balanced_tree.sales AS sales;
 ```
 
 **Table Output:**
@@ -39,11 +39,30 @@ ________________________________________________________________________________
 **SQL Statement:**
 	
 ```sql
+WITH txn_data AS (
+  SELECT
+  sales.txn_id
+  ,COUNT(sales.prod_id) AS txn_count
+
+  FROM balanced_tree.sales AS sales
+
+  GROUP BY sales.txn_id
+)
+
+SELECT
+ROUND(AVG(txn_data.txn_count)) AS avg_purchases_per_txn
+
+FROM txn_data;
 ```
 
 **Table Output:**
+| avg_purchases_per_txn |
+| --------------------- |
+| 6                     |
 
 **Answer:**
+
+There are an average of 6 unique purchases per transaction.
 
 ### 3. What are the 25th, 50th, and 75th percentile values for the revenue per transaction?
 ___________________________________________________________________________________________________________________________
