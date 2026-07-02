@@ -53,8 +53,20 @@ ________________________________________________________________________________
 **SQL Statement:**
 	
 ```sql
+SELECT
+ROUND(
+  SUM(sales.qty * sales.price * sales.discount::numeric/100),
+  2
+) total_discount
+
+FROM balanced_tree.sales AS sales
 ```
 
 **Table Output:**
+| total_discount |
+| -------------- |
+| 156229.14      |
 
 **Answer:**
+
+The total discounts given was $156,229.14.
