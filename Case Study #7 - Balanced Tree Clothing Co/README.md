@@ -8,6 +8,8 @@ All information related to this case study can be found at [Case Study #7 - Bala
 
 All solutions used PostgreSQL v17.
 
+**NOTE:** For anyone having trouble with the interactive SQL instance on this challenge, you can get to the DB Fiddle instance at [DB Fiddle - Case Study #7: Balanced Tree](https://www.db-fiddle.com/f/dkhULDEjGib3K58MvDjYJr/8).
+
 ## Questions and Answers
 ### 1. High Level Sales Analysis
 __________________________________
