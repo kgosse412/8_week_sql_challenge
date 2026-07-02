@@ -33,11 +33,20 @@ ________________________________________________________________________________
 **SQL Statement:**
 	
 ```sql
+SELECT
+SUM(sales.qty * sales.price) total_revenue
+
+FROM balanced_tree.sales AS sales
 ```
 
 **Table Output:**
+| total_revenue |
+| ------------- |
+| 1289453       |
 
 **Answer:**
+
+Total revenue before discounts in $1,289,453.
 
 ### 2. What was the total discount amount for all products?
 ___________________________________________________________________________________________________________________________
