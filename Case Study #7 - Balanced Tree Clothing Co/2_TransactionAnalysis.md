@@ -19,11 +19,20 @@ ________________________________________________________________________________
 **SQL Statement:**
 	
 ```sql
+SELECT
+COUNT(DISTINCT sales.txn_id) AS txn_count
+
+FROM balanced_tree.sales AS sales
 ```
 
 **Table Output:**
+| txn_count |
+| --------- |
+| 2500      |
 
 **Answer:**
+
+There are 2500 unique transactions.
 
 ### 2. What is the average unique products purchased in each transaction?
 ___________________________________________________________________________________________________________________________
