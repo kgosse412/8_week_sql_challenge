@@ -1,4 +1,4 @@
-# Digital Analysis
+# High Level Sales Analysis
 ## Table of Contents
 
 [1. What was the total quantity sold for all products?](#1-what-was-the-total-quantity-sold-for-all-products)
